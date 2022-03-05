@@ -8,10 +8,10 @@
 
 declare(strict_types=1);
 
-use App\Entity\Argument;
-use App\Entity\Instruction;
-use App\Enum\ArgType;
-use App\Enum\OpCode;
+use App\Cli\CliArgParser;
+use App\Enum\ExitCode;
+use App\Exceptions\BadNumberOfInputArgsException;
+use App\Exceptions\InvalidInputArgValueException;
 use App\Translation\Generator;
 
 ini_set('display_errors', 'stderr');
@@ -21,18 +21,17 @@ spl_autoload_register(function(string $fullyQualifiedClassName) {
     $asPath = str_replace('\\', '/', $withoutPrefix);
 
     /** @noinspection PhpIncludeInspection Generated path */
-    require_once __DIR__ . "/php/{$asPath}.php";
+    require_once __DIR__ . "/php/$asPath.php";
 });
 
-// TODO: for testing purposes only, remove after testing
-$arg1 = new Argument(ArgType::VAR, "LF@hello");
-$arg2 = new Argument(ArgType::STRING, "Hello\\032world!");
-
-$instruction = new Instruction(OpCode::MOVE);
-$instruction->addArgument($arg1);
-$instruction->addArgument($arg2);
+// Warning: for using $argc and $argv register_argc_argv must be enabled
+try {
+    $cliArgParser = new CliArgParser($argc, $argv);
+}
+catch(BadNumberOfInputArgsException|InvalidInputArgValueException $e) {
+    exit(ExitCode::WRONG_INPUT_ARGS);
+}
 
 $outputManager = new Generator;
-$outputManager->addInstruction($instruction);
 
 echo $outputManager->writeXml();
