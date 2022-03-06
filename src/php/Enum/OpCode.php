@@ -12,6 +12,8 @@ declare(strict_types=1);
 
 namespace App\Enum;
 
+use ValueError;
+
 /**
  * Supported operation codes
  */
@@ -167,5 +169,24 @@ enum OpCode
     public function save(): string
     {
         return $this->name;
+    }
+
+    /**
+     * Returns corresponding enum case from its name
+     *
+     * @param string $name Name of the enum case
+     *
+     * @return OpCode|null Corresponding enum case or null if invalid case name
+     * @throws ValueError Invalid enum case name
+     */
+    public static function from(string $name): ?OpCode
+    {
+        $cases = self::cases();
+
+        if(($index = array_search($name, $cases)) !== false) {
+            return $cases[$index];
+        } else {
+            throw new ValueError("Enum case with name $name doesn't exist");
+        }
     }
 }
