@@ -183,10 +183,13 @@ enum OpCode
     {
         $cases = self::cases();
 
-        if(($index = array_search($name, $cases)) !== false) {
-            return $cases[$index];
-        } else {
-            throw new ValueError("Enum case with name $name doesn't exist");
+        foreach($cases as $case) {
+            if($case->name == $name) {
+                return $case;
+            }
         }
+
+        // Should return if found
+        throw new ValueError("Enum case with name $name doesn't exist");
     }
 }

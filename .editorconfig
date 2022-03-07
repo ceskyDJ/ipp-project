@@ -1,0 +1,15 @@
+[*.src]
+trim_trailing_whitespace = false
+insert_final_newline = false
+
+[*.rc]
+trim_trailing_whitespace = false
+insert_final_newline = false
+
+[*.out]
+trim_trailing_whitespace = false
+insert_final_newline = false
+
+[*.in]
+trim_trailing_whitespace = false
+insert_final_newline = false

@@ -10,9 +10,12 @@ declare(strict_types=1);
 
 use App\Cli\CliArgParser;
 use App\Enum\ExitCode;
+use App\Enum\TokenType;
 use App\Exceptions\BadNumberOfInputArgsException;
 use App\Exceptions\InvalidInputArgValueException;
+use App\Exceptions\LexicalErrorException;
 use App\Translation\Generator;
+use App\Translation\Scanner;
 
 ini_set('display_errors', 'stderr');
 
@@ -34,4 +37,25 @@ catch(BadNumberOfInputArgsException|InvalidInputArgValueException $e) {
 
 $outputManager = new Generator;
 
-echo $outputManager->writeXml();
+// TODO: just for testing, please remove
+$scanner = new Scanner;
+
+try {
+    while(($token = $scanner->nextToken()) != null) {
+        if($token->getType() == TokenType::OP_CODE) {
+            $value = $token->getOpCode()->name;
+        } else if($token->getType() == TokenType::ARGUMENT) {
+            $arg = $token->getArgument();
+            $value = "({$arg->getType()->value}) {$arg->getValue()}";
+        } else {
+            $value = "null";
+        }
+
+        printf("%s: %s\n", $token->getType()->name, $value);
+    }
+}
+catch(LexicalErrorException $e) {
+    exit(ExitCode::OTHER_LEX_SYNTAX_ERROR->value);
+}
+
+//echo $outputManager->writeXml();
