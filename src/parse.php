@@ -29,7 +29,7 @@ try {
     $cliArgParser = new CliArgParser($argc, $argv);
 }
 catch(BadNumberOfInputArgsException|InvalidInputArgValueException $e) {
-    exit(ExitCode::WRONG_INPUT_ARGS);
+    exit(ExitCode::WRONG_INPUT_ARGS->value);
 }
 
 $outputManager = new Generator;

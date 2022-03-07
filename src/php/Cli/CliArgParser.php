@@ -93,8 +93,8 @@ class CliArgParser
      */
     private function writeHelp(): never
     {
-        $successExitCode = ExitCode::SUCCESS;
-        $wrongArgsExitCode = ExitCode::WRONG_INPUT_ARGS;
+        $successExitCode = ExitCode::SUCCESS->value;
+        $wrongArgsExitCode = ExitCode::WRONG_INPUT_ARGS->value;
 
         echo <<<EOF
         This help belongs to a simple program for parsing IPPcode22 language into XML representation
@@ -109,7 +109,7 @@ class CliArgParser
                                     the program ends with exit code $wrongArgsExitCode.
         EOF;
 
-        exit(ExitCode::SUCCESS);
+        exit(ExitCode::SUCCESS->value);
     }
 
     /**
