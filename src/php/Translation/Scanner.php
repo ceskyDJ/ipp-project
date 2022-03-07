@@ -132,8 +132,12 @@ class Scanner
         }
 
         // Int literal
-        if(preg_match('%^int@([+-]?\d+)$%', $value, $matches) !== false) {
-            return $token->setArgument(new Argument(ArgType::INT, $matches[1]));
+        if(preg_match('%^int@([+-]?(?:\d+|0[xX][\da-fA-F]+))$%', $value, $matches) !== false) {
+            if(intval($matches[1], 0) != 0 || preg_match('%^0+$%', $matches[1]) === 1) {
+                return $token->setArgument(new Argument(ArgType::INT, $matches[1]));
+            } else {
+                throw new LexicalErrorException("Numeric literal '$matches[1]' has bad number format");
+            }
         }
 
         // String literal
