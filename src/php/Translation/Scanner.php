@@ -18,6 +18,9 @@ use App\Enum\TokenType;
 use App\Exceptions\LexicalErrorException;
 use ValueError;
 
+/**
+ * Scanner for reading and parsing input into tokens (+ included lexical analysis)
+ */
 class Scanner
 {
 
