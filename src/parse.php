@@ -10,11 +10,14 @@ declare(strict_types=1);
 
 use App\Cli\CliArgParser;
 use App\Enum\ExitCode;
-use App\Enum\TokenType;
 use App\Exceptions\BadNumberOfInputArgsException;
+use App\Exceptions\InvalidHeaderException;
 use App\Exceptions\InvalidInputArgValueException;
+use App\Exceptions\InvalidOpCodeException;
 use App\Exceptions\LexicalErrorException;
+use App\Exceptions\SyntaxErrorException;
 use App\Translation\Generator;
+use App\Translation\Parser;
 use App\Translation\Scanner;
 
 ini_set('display_errors', 'stderr');
@@ -35,27 +38,20 @@ catch(BadNumberOfInputArgsException|InvalidInputArgValueException $e) {
     exit(ExitCode::WRONG_INPUT_ARGS->value);
 }
 
-$outputManager = new Generator;
-
-// TODO: just for testing, please remove
+// Needed objects
 $scanner = new Scanner;
+$generator = new Generator;
+$parser = new Parser($scanner, $generator);
 
+// Start processing
 try {
-    while(($token = $scanner->nextToken()) != null) {
-        if($token->getType() == TokenType::OP_CODE) {
-            $value = $token->getOpCode()->name;
-        } else if($token->getType() == TokenType::ARGUMENT) {
-            $arg = $token->getArgument();
-            $value = "({$arg->getType()->value}) {$arg->getValue()}";
-        } else {
-            $value = "null";
-        }
-
-        printf("%s: %s\n", $token->getType()->name, $value);
-    }
-}
-catch(LexicalErrorException $e) {
-    exit(ExitCode::OTHER_LEX_SYNTAX_ERROR->value);
+    $parser->parse();
+} catch(InvalidHeaderException $e) {
+    exit(ExitCode::INVALID_HEADER->value);
+} catch(InvalidOpCodeException $e) {
+    exit(ExitCode::INVALID_OPCODE->value);
+} catch(LexicalErrorException|SyntaxErrorException $e) {
+    exit(ExitCode::OTHER_LEX_SYNTAX_ERROR);
 }
 
-//echo $outputManager->writeXml();
+echo $generator->writeXml();
