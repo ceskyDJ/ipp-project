@@ -85,7 +85,7 @@ class Generator
         try {
             $xmlInstruction = $this->xml->createElement('instruction');
             $xmlInstruction->setAttribute('order', (string)$this->instructionNumber++);
-            $xmlInstruction->setAttribute('opcode', $instruction->getOpCode()->save());
+            $xmlInstruction->setAttribute('opcode', $instruction->getOpCode()->name);
 
             // Add arguments
             $i = 1;
@@ -97,7 +97,7 @@ class Generator
                 };
 
                 $xmlArgument = $this->xml->createElement(sprintf('arg%d', $i++), $value);
-                $xmlArgument->setAttribute('type', $argument->getType()->save());
+                $xmlArgument->setAttribute('type', $argument->getType()->value);
 
                 // Add to the instruction
                 $xmlInstruction->appendChild($xmlArgument);

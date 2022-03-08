@@ -45,14 +45,4 @@ enum ArgType: string
      * Variable identifier
      */
     case VAR = 'var';
-
-    /**
-     * Returns enum item in savable form
-     *
-     * @return string External form of the enumerated item (for using as a string)
-     */
-    public function save(): string
-    {
-        return $this->value;
-    }
 }

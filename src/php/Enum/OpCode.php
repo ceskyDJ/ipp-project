@@ -162,16 +162,6 @@ enum OpCode
     case BREAK;
 
     /**
-     * Returns enum item in savable form
-     *
-     * @return string External form of the enumerated item (for using as a string)
-     */
-    public function save(): string
-    {
-        return $this->name;
-    }
-
-    /**
      * Returns corresponding enum case from its name
      *
      * @param string $name Name of the enum case
