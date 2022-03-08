@@ -27,7 +27,7 @@ spl_autoload_register(function(string $fullyQualifiedClassName) {
     $asPath = str_replace('\\', '/', $withoutPrefix);
 
     /** @noinspection PhpIncludeInspection Generated path */
-    require_once __DIR__ . "/php/$asPath.php";
+    require_once __DIR__ . "/parse/$asPath.php";
 });
 
 // Warning: for using $argc and $argv register_argc_argv must be enabled
