@@ -51,7 +51,7 @@ try {
 } catch(InvalidOpCodeException $e) {
     exit(ExitCode::INVALID_OPCODE->value);
 } catch(LexicalErrorException|SyntaxErrorException $e) {
-    exit(ExitCode::OTHER_LEX_SYNTAX_ERROR);
+    exit(ExitCode::OTHER_LEX_SYNTAX_ERROR->value);
 }
 
 echo $generator->writeXml();

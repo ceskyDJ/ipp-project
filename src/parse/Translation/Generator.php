@@ -97,7 +97,7 @@ class Generator
                 };
 
                 $xmlArgument = $this->xml->createElement(sprintf('arg%d', $i++), $value);
-                $xmlArgument->setAttribute('type', $argument->getType()->value);
+                $xmlArgument->setAttribute('type', strtolower($argument->getType()->name));
 
                 // Add to the instruction
                 $xmlInstruction->appendChild($xmlArgument);

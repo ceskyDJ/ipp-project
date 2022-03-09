@@ -10,7 +10,10 @@ declare(strict_types=1);
 
 namespace App\Translation;
 
+use App\Entity\Argument;
 use App\Entity\Instruction;
+use App\Enum\ArgType;
+use App\Enum\OpCode;
 use App\Enum\TokenType;
 use App\Exceptions\InvalidHeaderException;
 use App\Exceptions\InvalidOpCodeException;
@@ -107,7 +110,7 @@ class Parser
                         $instruction->addArgument($token->getArgument());
                     } else if($token->getType() == TokenType::END) {
                         $state = self::CODE;
-                        $this->generator->addInstruction($instruction);
+                        $this->saveInstruction($instruction);
                     } else {
                         throw new SyntaxErrorException("Invalid instruction format");
                     }
@@ -115,10 +118,194 @@ class Parser
             }
         }
 
-        // Add the last instruction (there is no END token after it)
+        // Save the last instruction (there is no END token after it)
         // If there wasn't any instruction on the input, the variable will contain null
         if($instruction != null) {
-            $this->generator->addInstruction($instruction);
+            $this->saveInstruction($instruction);
         }
+    }
+
+    /**
+     * Checks an instruction and possibly sends it to generator
+     *
+     * @param Instruction $instruction Instruction to operate with
+     *
+     * @return void
+     * @throws SyntaxErrorException Syntax error found
+     */
+    private function saveInstruction(Instruction $instruction): void
+    {
+        $argumentsSyntax = [];
+        switch($instruction->getOpCode()) {
+            case OpCode::MOVE:
+            case OpCode::TYPE:
+                $argumentsSyntax = [ArgType::VAR, ArgType::symbol()];
+                break;
+            case OpCode::CREATEFRAME:
+            case OpCode::PUSHFRAME:
+            case OpCode::POPFRAME:
+            case OpCode::RETURN:
+            case OpCode::BREAK:
+                break;
+            case OpCode::DEFVAR:
+            case OpCode::POPS:
+                $argumentsSyntax = [ArgType::VAR];
+                break;
+            case OpCode::CALL:
+            case OpCode::LABEL:
+            case OpCode::JUMP:
+                $argumentsSyntax = [ArgType::LABEL];
+                break;
+            case OpCode::PUSHS:
+            case OpCode::WRITE:
+            case OpCode::DPRINT:
+                $argumentsSyntax = [ArgType::symbol()];
+                break;
+            case OpCode::ADD:
+            case OpCode::SUB:
+            case OpCode::MUL:
+            case OpCode::IDIV:
+                $argumentsSyntax = [ArgType::VAR, ArgType::typedConstVar(ArgType::INT), ArgType::typedConstVar(ArgType::INT)];
+                break;
+            case OpCode::LT:
+            case OpCode::GT:
+                $argumentsSyntax = [ArgType::VAR, ArgType::symbol(), ArgType::symbol()];
+                $args = $instruction->getArguments();
+                if(sizeof($args) < 3) {
+                    throw new SyntaxErrorException("Too few arguments");
+                }
+
+                if(!$this->hasSameType($args[1], $args[2])) {
+                    throw new SyntaxErrorException("Constants/literals in arguments must have the same type");
+                }
+                break;
+            case OpCode::EQ:
+                $argumentsSyntax = [ArgType::VAR, ArgType::symbol(), ArgType::symbol()];
+                $args = $instruction->getArguments();
+                if(sizeof($args) < 3) {
+                    throw new SyntaxErrorException("Too few arguments");
+                }
+
+                if(!$this->hasSameTypeOrNil($args[1], $args[2])) {
+                    throw new SyntaxErrorException("Constants/literals in arguments must have the same type
+                    or one of them must be nil");
+                }
+                break;
+            case OpCode::AND:
+            case OpCode::OR:
+            case OpCode::NOT:
+                $argumentsSyntax = [ArgType::VAR, ArgType::typedConstVar(ArgType::BOOL), ArgType::typedConstVar(ArgType::BOOL)];
+                break;
+            case OpCode::READ:
+                $argumentsSyntax = [ArgType::VAR, ArgType::TYPE];
+                break;
+            case OpCode::CONCAT:
+                $argumentsSyntax = [ArgType::VAR, ArgType::typedConstVar(ArgType::STRING), ArgType::typedConstVar
+                (ArgType::STRING)];
+                break;
+            case OpCode::STRLEN:
+                $argumentsSyntax = [ArgType::VAR, ArgType::typedConstVar(ArgType::STRING)];
+                break;
+            case OpCode::GETCHAR:
+            case OpCode::STRI2INT:
+                $argumentsSyntax = [ArgType::VAR, ArgType::typedConstVar(ArgType::STRING), ArgType::typedConstVar
+                (ArgType::INT)];
+                break;
+            case OpCode::SETCHAR:
+                $argumentsSyntax = [ArgType::VAR, ArgType::typedConstVar(ArgType::INT), ArgType::typedConstVar
+                (ArgType::STRING)];
+                break;
+            case OpCode::JUMPIFEQ:
+            case OpCode::JUMPIFNEQ:
+                $argumentsSyntax = [ArgType::LABEL, ArgType::symbol(), ArgType::symbol()];
+                $args = $instruction->getArguments();
+                if(sizeof($args) < 3) {
+                    throw new SyntaxErrorException("Too few arguments");
+                }
+
+                if(!$this->hasSameTypeOrNil($args[1], $args[2])) {
+                    throw new SyntaxErrorException("Constants/literals in arguments must have the same type
+                        or one of them must be nil");
+                }
+                break;
+            case OpCode::EXIT:
+                $argumentsSyntax = [ArgType::typedConstVar(ArgType::INT)];
+                break;
+            case OpCode::INT2CHAR:
+                $argumentsSyntax = [ArgType::VAR, ArgType::typedConstVar(ArgType::INT)];
+                break;
+        }
+
+        // Check arguments with prepared syntax pattern
+        if(!$this->hasCorrectArguments($instruction, $argumentsSyntax)) {
+            throw new SyntaxErrorException("Instruction's arguments aren't correct");
+        }
+
+        // Send instruction to the generator
+        $this->generator->addInstruction($instruction);
+    }
+
+    /**
+     * Checks correctness of instruction's arguments
+     *
+     * @param Instruction $instruction Instruction to check
+     * @param ArgType[]|int[] $argumentsSyntax Syntax pattern for arguments
+     *
+     * @return bool Are arguments or the instruction correct?
+     */
+    private function hasCorrectArguments(Instruction $instruction, array $argumentsSyntax): bool
+    {
+        $args = $instruction->getArguments();
+
+        if(sizeof($args) != sizeof($argumentsSyntax)) {
+            return false;
+        }
+
+        $i = 0;
+        foreach($instruction->getArguments() as $argument) {
+            if(($argumentsSyntax[$i] instanceof ArgType) && $argumentsSyntax[$i] != $argument->getType()) {
+                return false;
+            }
+
+            if((!($argumentsSyntax[$i] instanceof ArgType)) && !($argumentsSyntax[$i] & $argument->getType()->value)) {
+                return false;
+            }
+
+            $i++;
+        }
+
+        return true;
+    }
+
+    /**
+     * Compares types of two arguments for equality (static comparison only)
+     *
+     * @param Argument $first First argument
+     * @param Argument $second Second argument
+     *
+     * @return bool Have arguments the same type (or is at least one of them a variable)?
+     */
+    private function hasSameType(Argument $first, Argument $second): bool
+    {
+        // We can only check constants/literals here
+        if($first->getType() == ArgType::VAR || $second->getType() == ArgType::VAR) {
+            return true;
+        }
+
+        return $first->getType() == $second->getType();
+    }
+
+    /**
+     * Compares types of two arguments for equality or nil (static comparison only)
+     *
+     * @param Argument $first First argument
+     * @param Argument $second Second argument
+     *
+     * @return bool Have arguments the same type or nil type (or is at least one of them a variable)?
+     */
+    private function hasSameTypeOrNil(Argument $first, Argument $second): bool
+    {
+        return $this->hasSameType($first, $second) || $first->getType() == ArgType::NIL || $second->getType() ==
+            ArgType::NIL;
     }
 }
