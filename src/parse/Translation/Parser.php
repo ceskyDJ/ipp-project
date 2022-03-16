@@ -79,8 +79,13 @@ class Parser
     {
         $state = self::INIT;
         $instruction = null;
+        $opCodeExpected = false;
 
-        while(($token = $this->scanner->nextToken()) !== null) {
+        while(($token = $this->scanner->nextToken($opCodeExpected)) !== null) {
+            if($token == null) {
+                throw new InvalidOpCodeException("Operation code expected but it's missing or invalid");
+            }
+
             switch($state) {
                 case self::INIT:
                     if($token->getType() == TokenType::HEADER) {
@@ -92,6 +97,7 @@ class Parser
                 case self::HEADER:
                     if($token->getType() == TokenType::END) {
                         $state = self::CODE;
+                        $opCodeExpected = true;
                     } else {
                         throw new SyntaxErrorException("There couldn't be an instruction at the header row");
                     }
@@ -100,6 +106,7 @@ class Parser
                     if($token->getType() == TokenType::OP_CODE) {
                         $state = self::INSTRUCTION;
                         $instruction = new Instruction($token->getOpCode());
+                        $opCodeExpected = false;
                     } else {
                         throw new InvalidOpCodeException("Operation code is invalid or unknown");
                     }
@@ -110,6 +117,7 @@ class Parser
                         $instruction->addArgument($token->getArgument());
                     } else if($token->getType() == TokenType::END) {
                         $state = self::CODE;
+                        $opCodeExpected = true;
                         $this->saveInstruction($instruction);
                     } else {
                         throw new SyntaxErrorException("Invalid instruction format");

@@ -77,10 +77,12 @@ class Scanner
     /**
      * Gives a next loaded token
      *
+     * @param bool $isOpCode Is operation code expected?
+     *
      * @return Token|null Token with scanned data or null for end of file
      * @throws LexicalErrorException Lexical error in input source code
      */
-    public function nextToken(): ?Token
+    public function nextToken(bool $isOpCode): ?Token
     {
         $state = self::INIT;
         $readValue = '';
@@ -138,7 +140,18 @@ class Scanner
                         } else {
                             $this->lastState = self::VALUE;
 
-                            return $this->makeToken($readValue);
+                            // For dividing operation codes from labels
+                            if($isOpCode) {
+                                try {
+                                    $token = new Token;
+
+                                    return $token->setOpCode(OpCode::from(strtoupper($readValue)));
+                                } catch(ValueError) {
+                                    return null;
+                                }
+                            } else {
+                                return $this->makeToken($readValue);
+                            }
                         }
                         break;
                     case self::EOL:
@@ -174,11 +187,6 @@ class Scanner
     private function makeToken(string $value): Token
     {
         $token = new Token;
-
-        // Operation code
-        try {
-            return $token->setOpCode(OpCode::from(strtoupper($value)));
-        } catch(ValueError) { /* Continue with parsing by trying other variants */ }
 
         // Argument
         // Variable
