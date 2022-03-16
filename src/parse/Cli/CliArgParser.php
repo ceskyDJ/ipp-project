@@ -97,16 +97,17 @@ class CliArgParser
         $wrongArgsExitCode = ExitCode::WRONG_INPUT_ARGS->value;
 
         echo <<<EOF
-        This help belongs to a simple program for parsing IPPcode22 language into XML representation
-        used by an interpreter of this language. It is a part of a project to subject IPP at FIT BUT.
+        parse.php je skript pro zpracovani jazyka IPPcode22 a jeho prevod do XML reprezentace. Tu je dale mozne
+        pouzit jako vstup pro skript interpret.py, ktery provadi interpretaci zdrojoveho kodu. Jedna se
+        o soucast 1. casti projektu do predmetu IPP na FIT VUT.
         
-        Usage:
+        Pouziti:
         php8.1 parse.php [--help]
         
-        Optional arguments:
-          --help                    Shows this help message and ends with exit code $successExitCode. It can't
-                                    be combined with any other switch or input argument. Otherwise,
-                                    the program ends with exit code $wrongArgsExitCode.
+        Nepovinne parametry:
+          --help                    Zobrazi tuto napovedu a skonci s navratovym kodem $successExitCode. Tento
+                                    parametr nemuze byt kombinovan s jinymi parametry. V opacnem pripade
+                                    dochazi k chybe a skript je ukoncen s navratovym kodem $wrongArgsExitCode.
         EOF;
 
         exit(ExitCode::SUCCESS->value);
