@@ -129,6 +129,9 @@ class Generator
      */
     private function escape(string $value): string
     {
-        return str_replace(['<', '>', '&', '\'', '"'], ['&lt;', '&gt;', '&amp;', '&apos;', '&quot;'], $value);
+        // Needs to be replaces before others because every escape char contains this char
+        $value = str_replace('&', '&amp;', $value);
+
+        return str_replace(['<', '>', '\'', '"'], ['&lt;', '&gt;', '&apos;', '&quot;'], $value);
     }
 }
