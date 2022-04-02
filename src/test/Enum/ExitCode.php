@@ -33,6 +33,10 @@ enum ExitCode: int
      */
     case OUTPUT_FILE_ERROR = 12;
     /**
+     * Entered directory doesn't exist or the script hasn't got access to it
+     */
+    case INVALID_DIRECTORY = 41;
+    /**
      * Error independent of user input (memory allocation, etc.)
      */
     case INTERNAL_ERROR = 99;

@@ -11,6 +11,7 @@ declare(strict_types=1);
 use Test\Cli\CliArgParser;
 use Test\Enum\ExitCode;
 use Test\Exceptions\BadNumberOfInputArgsException;
+use Test\Exceptions\InvalidDirectoryException;
 use Test\Exceptions\InvalidInputArgValueException;
 
 ini_set('display_errors', 'stderr');
@@ -27,7 +28,7 @@ spl_autoload_register(function(string $fullyQualifiedClassName) {
 try {
     $cliArgParser = new CliArgParser($argc, $argv);
 }
-catch(BadNumberOfInputArgsException|InvalidInputArgValueException $e) {
+catch(BadNumberOfInputArgsException|InvalidInputArgValueException|InvalidDirectoryException $e) {
     exit(ExitCode::WRONG_INPUT_ARGS->value);
 }
 

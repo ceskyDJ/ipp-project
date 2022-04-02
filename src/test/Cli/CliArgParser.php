@@ -12,6 +12,7 @@ namespace Test\Cli;
 
 use Test\Enum\ExitCode;
 use Test\Exceptions\BadNumberOfInputArgsException;
+use Test\Exceptions\InvalidDirectoryException;
 use Test\Exceptions\InvalidInputArgValueException;
 
 /**
@@ -40,7 +41,8 @@ class CliArgParser
      * @param array $argv CLI arguments (in raw form, from $argv PHP variable)
      *
      * @throws BadNumberOfInputArgsException Too many input arguments given
-     * @throws InvalidInputArgValueException
+     * @throws InvalidInputArgValueException Missing required value of argument or excess value of switch
+     * @throws InvalidDirectoryException Missing  directory or directory the script hasn't got access to
      */
     public function __construct(int $argc, array $argv)
     {
@@ -59,12 +61,17 @@ class CliArgParser
      *
      * @return void
      * @throws BadNumberOfInputArgsException Too many input args given
-     * @throws InvalidInputArgValueException
+     * @throws InvalidInputArgValueException Missing required value of argument or excess value of switch
+     * @throws InvalidDirectoryException Missing  directory or directory the script hasn't got access to
      */
     private function parseCliArgs(): void
     {
         $shortSwitches = '';
-        $longSwitches = ['help::']; // --help has optional value (::) only for input validation
+        // All arguments have optional value (::), it is for better input validation only
+        $longSwitches = [
+            'help::', 'directory::', 'recursive::', 'parse-script::', 'int-script::', 'parse-only::', 'int-only::',
+            'jexampath::', 'noclean::'
+        ];
         $usedInputArgs = 0;
 
         $this->parsedArgs = getopt($shortSwitches, $longSwitches, $usedInputArgs);
@@ -74,8 +81,38 @@ class CliArgParser
             throw new BadNumberOfInputArgsException("You can't use any other input argument alongside --help");
         }
 
-        if(isset($this->parsedArgs['help']) && $this->parsedArgs['help'] != false) {
-            throw new InvalidInputArgValueException("--help switch can't have any value");
+        // --parse-only and --int-only can't be used together
+        if(isset($this->parsedArgs['parse-only']) && isset($this->parsedArgs['int-only'])) {
+            throw new BadNumberOfInputArgsException("--parse-only and --int-only can't be used together");
+        }
+
+        // No-value arguments (switches) can't have any value
+        $noValueArguments = ['help', 'recursive', 'parse-only', 'int-only', 'noclean'];
+        foreach($noValueArguments as $argument) {
+            if(isset($this->parsedArgs[$argument]) && $this->parsedArgs[$argument] != false) {
+                throw new InvalidInputArgValueException("--$argument switch can't have any value");
+            }
+        }
+
+        // Value arguments must have a value
+        $valueArguments = ['directory', 'parse-script', 'int-script', 'jexampath'];
+        foreach($valueArguments as $argument) {
+            if(isset($this->parsedArgs[$argument]) && $this->parsedArgs[$argument] == false) {
+                throw new InvalidInputArgValueException("--$argument argument must have a value");
+            }
+        }
+
+        // Directory arguments must have a valid directory
+        $directoryArguments = ['directory', 'jexampath'];
+        foreach($directoryArguments as $argument) {
+            if(!isset($this->parsedArgs[$argument])) {
+                continue;
+            }
+
+            $directory = $this->parsedArgs[$argument];
+            if(!file_exists($directory) || !is_dir($directory) || !is_readable($directory)) {
+                throw new InvalidDirectoryException("Directory '$directory' in --$argument isn't valid.");
+            }
         }
 
         // All arguments must be used
@@ -97,17 +134,37 @@ class CliArgParser
         $wrongArgsExitCode = ExitCode::WRONG_INPUT_ARGS->value;
 
         echo <<<EOF
-        parse.php je skript pro zpracovani jazyka IPPcode22 a jeho prevod do XML reprezentace. Tu je dale mozne
-        pouzit jako vstup pro skript interpret.py, ktery provadi interpretaci zdrojoveho kodu. Jedna se
-        o soucast 1. casti projektu do predmetu IPP na FIT VUT.
+        test.php je skript pro automaticke testovani skriptu parse.php a interpreter.py. Jsou vyuzivany
+        predpripravene testy, ktere jsou pouze automaticky spousteny. Jedna se o soucast 2. casti projektu
+        do predmetu IPP na FIT VUT.
         
         Pouziti:
-        php8.1 parse.php [--help]
+        php8.1 test.php [--help] [--directory=path] [--recursive] [--parse-script=file] [--int-script=file]
+            [--parse-only | --int-only] [--jexampath=path] [--noclean]
         
         Nepovinne parametry:
           --help                    Zobrazi tuto napovedu a skonci s navratovym kodem $successExitCode. Tento
                                     parametr nemuze byt kombinovan s jinymi parametry. V opacnem pripade
                                     dochazi k chybe a skript je ukoncen s navratovym kodem $wrongArgsExitCode.
+          --directory=path          Testy budou hledany v zadanem adresari path. Bez pouziti tohoto argumentu
+                                    budou testy hledany v aktualnim adresari.
+          --recursive               Pri pouziti tohoto prepinace budou testy hledany nejen primo v danem
+                                    adresari, ale take rekurzivne ve vsech jeho podadresarich.
+          --parse-script=file       Cesta k souboru skriptu pro analyzuji zdrojoveho kodu v jazyce IPPcode22.
+                                    Pokud neni tento argument zadan, predpoklada se soubor parse.php
+                                    v aktualnim adresari.
+          --int-script=file         Cesta k souboru skriptu pro interpretaci XML reprezentace kodu vytvorene
+                                    v prvni fazi skriptem parse.php. V pripade neuvedeni tohoto argumentu se
+                                    pouzije soubor interpreter.py z aktualniho adresare.
+          --parse-only              Bude testovan pouze skript parse.php (analyzator jazyka IPPcode22).
+          --int-only                Bude testovan pouze skript interpreter.py (interpret XML reprezentace jazyka).
+          --jexampath=path          Cesta k adresari obsahujicimu soubory jexamxml.jar s JAR balickem obsahujicim
+                                    nastroj A7Soft JExamXML a options s konfiguraci pro tento nastroj. Pokud neni
+                                    tento argument specifikovan, je pouzit adresar /pub/courses/ipp/jexamxml/.
+          --noclean                 Behem cinnosti skriptu nebudou mazany pomocne soubory (napr. s mezivysledky
+                                    po zpracovani zdrojovych kodu nastrojem parse.php).
+          
+          Argumenty --parse-only a --int-only nesmi byt kombinovany.
         EOF;
 
         exit(ExitCode::SUCCESS->value);
