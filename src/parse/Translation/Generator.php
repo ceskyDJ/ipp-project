@@ -8,13 +8,13 @@
 
 declare(strict_types=1);
 
-namespace App\Translation;
+namespace Parse\Translation;
 
-use App\Entity\Instruction;
-use App\Enum\ArgType;
 use DOMDocument;
 use DOMElement;
 use DOMException;
+use Parse\Entity\Instruction;
+use Parse\Enum\ArgType;
 
 /**
  * Generator of final code representation

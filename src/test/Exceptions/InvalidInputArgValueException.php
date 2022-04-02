@@ -8,14 +8,14 @@
 
 declare(strict_types=1);
 
-namespace Parse\Exceptions;
+namespace Test\Exceptions;
 
 use Exception;
 
 /**
- * Exception for invalid or unknown instruction operation code
+ * Exception for invalid (missing, extra, wrong) value of CLI input argument
  */
-class InvalidOpCodeException extends Exception
+class InvalidInputArgValueException extends Exception
 {
 
 }

@@ -8,17 +8,17 @@
 
 declare(strict_types=1);
 
-namespace App\Translation;
+namespace Parse\Translation;
 
-use App\Entity\Argument;
-use App\Entity\Instruction;
-use App\Enum\ArgType;
-use App\Enum\OpCode;
-use App\Enum\TokenType;
-use App\Exceptions\InvalidHeaderException;
-use App\Exceptions\InvalidOpCodeException;
-use App\Exceptions\LexicalErrorException;
-use App\Exceptions\SyntaxErrorException;
+use Parse\Entity\Argument;
+use Parse\Entity\Instruction;
+use Parse\Enum\ArgType;
+use Parse\Enum\OpCode;
+use Parse\Enum\TokenType;
+use Parse\Exceptions\InvalidHeaderException;
+use Parse\Exceptions\InvalidOpCodeException;
+use Parse\Exceptions\LexicalErrorException;
+use Parse\Exceptions\SyntaxErrorException;
 
 /**
  * Syntactic analyzer parses tokens into object representation of instructions

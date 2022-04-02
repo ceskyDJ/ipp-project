@@ -8,9 +8,9 @@
 
 declare(strict_types=1);
 
-namespace App\Entity;
+namespace Parse\Entity;
 
-use App\Enum\OpCode;
+use Parse\Enum\OpCode;
 
 /**
  * Representation of instruction

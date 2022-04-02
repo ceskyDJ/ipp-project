@@ -8,11 +8,11 @@
 
 declare(strict_types=1);
 
-namespace Parse\Cli;
+namespace Test\Cli;
 
-use Parse\Enum\ExitCode;
-use Parse\Exceptions\BadNumberOfInputArgsException;
-use Parse\Exceptions\InvalidInputArgValueException;
+use Test\Enum\ExitCode;
+use Test\Exceptions\BadNumberOfInputArgsException;
+use Test\Exceptions\InvalidInputArgValueException;
 
 /**
  * Parser of input from command line interface

@@ -8,10 +8,10 @@
 
 declare(strict_types=1);
 
-namespace App\Entity;
+namespace Parse\Entity;
 
-use App\Enum\OpCode;
-use App\Enum\TokenType;
+use Parse\Enum\OpCode;
+use Parse\Enum\TokenType;
 
 /**
  * Token for communication between scanner and parser

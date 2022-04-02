@@ -8,7 +8,7 @@
 
 declare(strict_types=1);
 
-namespace Parse\Enum;
+namespace Test\Enum;
 
 /**
  * "Standard" exit codes for this project
@@ -32,18 +32,6 @@ enum ExitCode: int
      * Error when opening output file (existence, permissions, ...), writing error
      */
     case OUTPUT_FILE_ERROR = 12;
-    /**
-     * Invalid or missing header in IPPcode22 source code
-     */
-    case INVALID_HEADER = 21;
-    /**
-     * Invalid or missing operation code in IPPcode22 source code
-     */
-    case INVALID_OPCODE = 22;
-    /**
-     * Other lexical or syntax error in IPPcode22 source code
-     */
-    case OTHER_LEX_SYNTAX_ERROR = 23;
     /**
      * Error independent of user input (memory allocation, etc.)
      */

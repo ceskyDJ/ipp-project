@@ -8,9 +8,9 @@
 
 declare(strict_types=1);
 
-namespace App\Entity;
+namespace Parse\Entity;
 
-use App\Enum\ArgType;
+use Parse\Enum\ArgType;
 
 /**
  * Representation of instruction's argument

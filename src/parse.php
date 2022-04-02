@@ -8,22 +8,22 @@
 
 declare(strict_types=1);
 
-use App\Cli\CliArgParser;
-use App\Enum\ExitCode;
-use App\Exceptions\BadNumberOfInputArgsException;
-use App\Exceptions\InvalidHeaderException;
-use App\Exceptions\InvalidInputArgValueException;
-use App\Exceptions\InvalidOpCodeException;
-use App\Exceptions\LexicalErrorException;
-use App\Exceptions\SyntaxErrorException;
-use App\Translation\Generator;
-use App\Translation\Parser;
-use App\Translation\Scanner;
+use Parse\Cli\CliArgParser;
+use Parse\Enum\ExitCode;
+use Parse\Exceptions\BadNumberOfInputArgsException;
+use Parse\Exceptions\InvalidHeaderException;
+use Parse\Exceptions\InvalidInputArgValueException;
+use Parse\Exceptions\InvalidOpCodeException;
+use Parse\Exceptions\LexicalErrorException;
+use Parse\Exceptions\SyntaxErrorException;
+use Parse\Translation\Generator;
+use Parse\Translation\Parser;
+use Parse\Translation\Scanner;
 
 ini_set('display_errors', 'stderr');
 
 spl_autoload_register(function(string $fullyQualifiedClassName) {
-    $withoutPrefix = str_replace('App\\', '', $fullyQualifiedClassName);
+    $withoutPrefix = str_replace('Parse\\', '', $fullyQualifiedClassName);
     $asPath = str_replace('\\', '/', $withoutPrefix);
 
     /** @noinspection PhpIncludeInspection Generated path */

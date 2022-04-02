@@ -8,14 +8,14 @@
 
 declare(strict_types=1);
 
-namespace App\Translation;
+namespace Parse\Translation;
 
-use App\Entity\Argument;
-use App\Entity\Token;
-use App\Enum\ArgType;
-use App\Enum\OpCode;
-use App\Enum\TokenType;
-use App\Exceptions\LexicalErrorException;
+use Parse\Entity\Argument;
+use Parse\Entity\Token;
+use Parse\Enum\ArgType;
+use Parse\Enum\OpCode;
+use Parse\Enum\TokenType;
+use Parse\Exceptions\LexicalErrorException;
 use ValueError;
 
 /**

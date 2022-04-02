@@ -8,7 +8,7 @@
 
 declare(strict_types=1);
 
-namespace App\Enum;
+namespace Parse\Enum;
 
 /**
  * Token types informing about the value stored in token
