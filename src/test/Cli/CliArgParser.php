@@ -14,6 +14,7 @@ use Test\Enum\ExitCode;
 use Test\Exceptions\BadNumberOfInputArgsException;
 use Test\Exceptions\InvalidDirectoryException;
 use Test\Exceptions\InvalidInputArgValueException;
+use Test\Exceptions\InvalidInputFileException;
 
 /**
  * Parser of input from command line interface
@@ -43,6 +44,7 @@ class CliArgParser
      * @throws BadNumberOfInputArgsException Too many input arguments given
      * @throws InvalidInputArgValueException Missing required value of argument or excess value of switch
      * @throws InvalidDirectoryException Missing  directory or directory the script hasn't got access to
+     * @throws InvalidInputFileException Missing script file or file that script hasn't got access to
      */
     public function __construct(int $argc, array $argv)
     {
@@ -51,6 +53,7 @@ class CliArgParser
 
         $this->parseCliArgs();
         $this->setDefaults();
+        $this->checkDirectoriesAndFiles();
 
         if(key_exists("help", $this->parsedArgs)) {
             $this->writeHelp();
@@ -63,7 +66,6 @@ class CliArgParser
      * @return void
      * @throws BadNumberOfInputArgsException Too many input args given
      * @throws InvalidInputArgValueException Missing required value of argument or excess value of switch
-     * @throws InvalidDirectoryException Missing  directory or directory the script hasn't got access to
      */
     private function parseCliArgs(): void
     {
@@ -103,17 +105,14 @@ class CliArgParser
             }
         }
 
-        // Directory arguments must have a valid directory
+        // Remove end slash from directory arguments
         $directoryArguments = ['directory', 'jexampath'];
         foreach($directoryArguments as $argument) {
             if(!isset($this->parsedArgs[$argument])) {
                 continue;
             }
 
-            $directory = $this->parsedArgs[$argument];
-            if(!file_exists($directory) || !is_dir($directory) || !is_readable($directory)) {
-                throw new InvalidDirectoryException("Directory '$directory' in --$argument isn't valid.");
-            }
+            $this->parsedArgs[$argument] = rtrim($this->parsedArgs[$argument], '/');
         }
 
         // All arguments must be used
@@ -130,10 +129,42 @@ class CliArgParser
      */
     private function setDefaults(): void
     {
-        $this->parsedArgs['directory'] = $this->parsedArgs['directory'] ?? '.';
+        $this->parsedArgs['directory'] = $this->parsedArgs['directory'] ?? getcwd();
         $this->parsedArgs['parse-script'] = $this->parsedArgs['parse-script'] ?? 'parse.php';
         $this->parsedArgs['int-script'] = $this->parsedArgs['int-script'] ?? 'interpreter.py';
-        $this->parsedArgs['jexampath'] = $this->parsedArgs['jexampath'] ?? '/pub/courses/ipp/jexamxml/';
+        $this->parsedArgs['jexampath'] = $this->parsedArgs['jexampath'] ?? '/pub/courses/ipp/jexamxml';
+    }
+
+    /**
+     * Checks directory and file input arguments
+     *
+     * @return void
+     * @throws InvalidDirectoryException Missing directory or directory the script hasn't got access to
+     * @throws InvalidInputFileException Missing script file or file that script hasn't got access to
+     */
+    private function checkDirectoriesAndFiles(): void
+    {
+        // Check validity of directory arguments
+        $directoryArguments = ['directory', 'jexampath'];
+        foreach($directoryArguments as $argument) {
+            $directory = $this->parsedArgs[$argument];
+            if(!file_exists($directory) || !is_dir($directory) || !is_readable($directory)) {
+                throw new InvalidDirectoryException("Directory '$directory' in --$argument isn't valid.");
+            }
+        }
+
+        // Check validity of source files arguments
+        $scriptFileArguments = ['parse-script', 'int-script'];
+        foreach($scriptFileArguments as $argument) {
+            if(!isset($this->parsedArgs[$argument])) {
+                continue;
+            }
+
+            $file = $this->parsedArgs[$argument];
+            if(!file_exists($file) || !is_file($file) || !is_readable($file)) {
+                throw new InvalidInputFileException("File '$file' in --$argument isn't valid.");
+            }
+        }
     }
 
     /**
@@ -164,7 +195,7 @@ class CliArgParser
                                     budou testy hledany v aktualnim adresari.
           --recursive               Pri pouziti tohoto prepinace budou testy hledany nejen primo v danem
                                     adresari, ale take rekurzivne ve vsech jeho podadresarich.
-          --parse-script=file       Cesta k souboru skriptu pro analyzuji zdrojoveho kodu v jazyce IPPcode22.
+          --parse-script=file       Cesta k souboru skriptu pro analyzu zdrojoveho kodu v jazyce IPPcode22.
                                     Pokud neni tento argument zadan, predpoklada se soubor parse.php
                                     v aktualnim adresari.
           --int-script=file         Cesta k souboru skriptu pro interpretaci XML reprezentace kodu vytvorene
