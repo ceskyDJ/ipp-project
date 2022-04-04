@@ -50,6 +50,7 @@ class CliArgParser
         $this->argv = $argv;
 
         $this->parseCliArgs();
+        $this->setDefaults();
 
         if(key_exists("help", $this->parsedArgs)) {
             $this->writeHelp();
@@ -120,6 +121,19 @@ class CliArgParser
             $unknownArgs = implode(" ", array_slice($this->argv, $usedInputArgs));
             throw new BadNumberOfInputArgsException("Can't process unknown input arguments: $unknownArgs");
         }
+    }
+
+    /**
+     * Sets default values to unset input arguments
+     *
+     * @return void
+     */
+    private function setDefaults(): void
+    {
+        $this->parsedArgs['directory'] = $this->parsedArgs['directory'] ?? '.';
+        $this->parsedArgs['parse-script'] = $this->parsedArgs['parse-script'] ?? 'parse.php';
+        $this->parsedArgs['int-script'] = $this->parsedArgs['int-script'] ?? 'interpreter.py';
+        $this->parsedArgs['jexampath'] = $this->parsedArgs['jexampath'] ?? '/pub/courses/ipp/jexamxml/';
     }
 
     /**
