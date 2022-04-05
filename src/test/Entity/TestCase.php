@@ -17,11 +17,16 @@ class TestCase
 {
 
     /**
+     * Temporary directory for storing temporary help files for testing
+     */
+    private const TEST_TMP_DIR = "tmp";
+
+    /**
      * @var string Name of the test
      */
     private string $name;
     /**
-     * @var string Path from the root directory of tests (exclude this test's folder)
+     * @var string Path from the root directory of tests
      */
     private string $namespace;
     /**
@@ -32,7 +37,7 @@ class TestCase
     /**
      * Class constructor
      *
-     * @param string $pathToTest Path to the test folder
+     * @param string $pathToTest Path to the test universal filename (without extension)
      */
     public function __construct(string $pathToTest, string $testRootDir)
     {
@@ -44,13 +49,38 @@ class TestCase
     /**
      * Creates object's data from the test path
      *
-     * @param string $pathToTest Path to the test folder
+     * @param string $pathToTest Path to the test universal filename (without extension)
      *
      * @return void
      */
     private function createFromPath(string $pathToTest): void
     {
-        // TODO: implement this method
+        $testPathParts = explode('/', $pathToTest);
+
+        $this->name = rtrim(array_pop($testPathParts), '/');
+        $directoryWithTest = implode('/', $testPathParts);
+
+        $testRealPath = realpath($directoryWithTest);
+        $rootRealPath = realpath($this->testRootDir); // Just testing root
+
+        $this->namespace = ltrim(str_replace($rootRealPath, '', $testRealPath), '/');
+    }
+
+    /**
+     * Gets file content in a safe way0
+     *
+     * @param string $file File name
+     *
+     * @return string Content of the file
+     */
+    private function getFileContent(string $file): string
+    {
+        // Create a file if not exists
+        if(!file_exists($file)) {
+            touch($file);
+        }
+
+        return file_get_contents($file);
     }
 
     /**
@@ -66,7 +96,7 @@ class TestCase
     /**
      * Getter for test namespace
      *
-     * @return string Path to the test from testing root directory
+     * @return string Path to the directory contains the test from testing root directory
      */
     public function getNamespace(): string
     {
@@ -76,11 +106,21 @@ class TestCase
     /**
      * Getter for test path
      *
-     * @return string Test path (relative from current directory or absolute)
+     * @return string Full path to the test directory (relative from current directory or absolute)
      */
     public function getPath(): string
     {
-        // TODO: implement this method
+        return "$this->namespace/$this->name";
+    }
+
+    /**
+     * Getter for file with source code to test
+     *
+     * @return string Path to file with source code to use in test
+     */
+    public function getSourceCodeFile(): string
+    {
+        return "$this->testRootDir/{$this->getPath()}.src";
     }
 
     /**
@@ -90,7 +130,7 @@ class TestCase
      */
     public function getSourceCode(): string
     {
-        // TODO: implement this method
+        return $this->getFileContent($this->getSourceCodeFile());
     }
 
     /**
@@ -100,7 +140,17 @@ class TestCase
      */
     public function getInputFile(): string
     {
-        // TODO: implement this method
+        return "$this->testRootDir/{$this->getPath()}.in";
+    }
+
+    /**
+     * Getter for test input
+     *
+     * @return string Input to give to the tested script
+     */
+    public function getInput(): string
+    {
+        return $this->getFileContent($this->getInputFile());
     }
 
     /**
@@ -110,7 +160,7 @@ class TestCase
      */
     public function getReferenceExitCode(): int
     {
-        // TODO: implement this method
+        return (int)$this->getFileContent("$this->testRootDir/{$this->getPath()}.rc");
     }
 
     /**
@@ -120,6 +170,36 @@ class TestCase
      */
     public function getReferenceOutputFile(): string
     {
-        // TODO: implement this method
+        return "$this->testRootDir/{$this->getPath()}.out";
+    }
+
+    /**
+     * Getter for test reference output
+     * 
+     * @return string Reference output for the tested script
+     */
+    public function getReferenceOutput(): string
+    {
+        return $this->getFileContent($this->getReferenceOutputFile());
+    }
+
+    /**
+     * Getter for test output file
+     * 
+     * @return string Path to file where to save output of the (last) tested script
+     */
+    public function getOutputFile(): string
+    {
+        return posix_getcwd() . "/" . self::TEST_TMP_DIR . "/{$this->getPath()}.out";
+    }
+
+    /**
+     * Getter for temporary file for output of intermediate step of the testing process
+     *
+     * @return string Path to the temporary file
+     */
+    public function getTempFile(): string
+    {
+        return posix_getcwd() . "/" . self::TEST_TMP_DIR . "/{$this->getPath()}.tmp";
     }
 }

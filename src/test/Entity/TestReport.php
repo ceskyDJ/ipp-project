@@ -12,6 +12,7 @@ namespace Test\Entity;
 
 use DateInterval;
 use DateTime;
+use Test\Enum\TestStatus;
 use Test\Exceptions\SetEndOfTestingTwiceError;
 
 /**
@@ -50,7 +51,7 @@ class TestReport
      */
     public function addTest(Test $test): void
     {
-        // TODO: implement this method
+        $this->runTests[] = $test;
     }
 
     /**
@@ -75,7 +76,14 @@ class TestReport
      */
     public function countSuccessful(): int
     {
-        // TODO: implement this method
+        $successful = 0;
+        foreach($this->runTests as $test) {
+            if($test->getStatus() == TestStatus::SUCCESS) {
+                $successful++;
+            }
+        }
+
+        return $successful;
     }
 
     /**
@@ -85,7 +93,14 @@ class TestReport
      */
     public function countFailed(): int
     {
-        // TODO: implement this method
+        $failed = 0;
+        foreach($this->runTests as $test) {
+            if($test->getStatus() == TestStatus::BAD_EXIT_CODE || $test->getStatus() == TestStatus::BAD_OUTPUT) {
+                $failed++;
+            }
+        }
+
+        return $failed;
     }
 
     /**
@@ -95,7 +110,7 @@ class TestReport
      */
     public function countTestingLength(): DateInterval
     {
-        // TODO: implement this method
+        return $this->end->diff($this->start, true);
     }
 
     /**

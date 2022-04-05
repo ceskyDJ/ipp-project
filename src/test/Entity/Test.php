@@ -68,7 +68,7 @@ class Test
     /**
      * Getter for test namespace
      *
-     * @return string Path to the test from testing root directory
+     * @return string Path to the directory with test from testing root directory
      */
     public function getNamespace(): string
     {
@@ -92,7 +92,7 @@ class Test
      */
     public function getReferenceOutput(): string
     {
-        return file_get_contents($this->testCase->getReferenceOutputFile());
+        return $this->testCase->getReferenceOutput();
     }
 
     /**
@@ -118,10 +118,16 @@ class Test
     /**
      * Getter for output of the tested script
      *
-     * @return string Real output of the tested script
+     * @return string|null Real output of the tested script or null if the script returned nothing
      */
-    public function getOutput(): string
+    public function getOutput(): ?string
     {
-        // TODO: implement this method
+        $outputFile = $this->testCase->getOutputFile();
+
+        if(!file_exists($outputFile)) {
+            return null;
+        }
+
+        return file_get_contents($outputFile);
     }
 }
