@@ -12,9 +12,8 @@ namespace Test\Cli;
 
 use Test\Enum\ExitCode;
 use Test\Exceptions\BadNumberOfInputArgsException;
-use Test\Exceptions\InvalidDirectoryException;
+use Test\Exceptions\InvalidDirOrFileArgException;
 use Test\Exceptions\InvalidInputArgValueException;
-use Test\Exceptions\InvalidInputFileException;
 
 /**
  * Parser of input from command line interface
@@ -43,8 +42,7 @@ class CliArgParser
      *
      * @throws BadNumberOfInputArgsException Too many input arguments given
      * @throws InvalidInputArgValueException Missing required value of argument or excess value of switch
-     * @throws InvalidDirectoryException Missing  directory or directory the script hasn't got access to
-     * @throws InvalidInputFileException Missing script file or file that script hasn't got access to
+     * @throws InvalidDirOrFileArgException Missing  directory/file or directory/file the script hasn't got access to
      */
     public function __construct(int $argc, array $argv)
     {
@@ -70,10 +68,10 @@ class CliArgParser
     private function parseCliArgs(): void
     {
         $shortSwitches = '';
-        // All arguments have optional value (::), it is for better input validation only
+        // All switches have optional value (::), it is for better input validation only
         $longSwitches = [
-            'help::', 'directory::', 'recursive::', 'parse-script::', 'int-script::', 'parse-only::', 'int-only::',
-            'jexampath::', 'noclean::'
+            'help::', 'directory:', 'recursive::', 'parse-script:', 'int-script:', 'parse-only::', 'int-only::',
+            'jexampath:', 'noclean::'
         ];
         $usedInputArgs = 0;
 
@@ -100,7 +98,9 @@ class CliArgParser
         // Value arguments must have a value
         $valueArguments = ['directory', 'parse-script', 'int-script', 'jexampath'];
         foreach($valueArguments as $argument) {
-            if(isset($this->parsedArgs[$argument]) && $this->parsedArgs[$argument] == false) {
+            // Arguments with required value aren't in the parsed arguments array, but they are in argv
+            // Arguments with entered value are in the parsed arguments array
+            if(!isset($this->parsedArgs[$argument]) && in_array("--$argument", $this->argv)) {
                 throw new InvalidInputArgValueException("--$argument argument must have a value");
             }
         }
@@ -139,8 +139,7 @@ class CliArgParser
      * Checks directory and file input arguments
      *
      * @return void
-     * @throws InvalidDirectoryException Missing directory or directory the script hasn't got access to
-     * @throws InvalidInputFileException Missing script file or file that script hasn't got access to
+     * @throws InvalidDirOrFileArgException Missing directory/file or directory/file the script hasn't got access to
      */
     private function checkDirectoriesAndFiles(): void
     {
@@ -149,7 +148,7 @@ class CliArgParser
         foreach($directoryArguments as $argument) {
             $directory = $this->parsedArgs[$argument];
             if(!file_exists($directory) || !is_dir($directory) || !is_readable($directory)) {
-                throw new InvalidDirectoryException("Directory '$directory' in --$argument isn't valid.");
+                throw new InvalidDirOrFileArgException("Directory '$directory' in --$argument isn't valid.");
             }
         }
 
@@ -162,7 +161,7 @@ class CliArgParser
 
             $file = $this->parsedArgs[$argument];
             if(!file_exists($file) || !is_file($file) || !is_readable($file)) {
-                throw new InvalidInputFileException("File '$file' in --$argument isn't valid.");
+                throw new InvalidDirOrFileArgException("File '$file' in --$argument isn't valid.");
             }
         }
     }

@@ -13,9 +13,9 @@ namespace Test\Exceptions;
 use Exception;
 
 /**
- * Exception for non-existing directory or directory where the script hasn't got access to
+ * Exception for non-existing entered directory/file or directory/file where the script hasn't got access to
  */
-class InvalidDirectoryException extends Exception
+class InvalidDirOrFileArgException extends Exception
 {
 
 }
