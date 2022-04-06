@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+
+
+
+
+
+<html lang="cs">
+<head>
+    <meta charset="UTF-8" />
+
+    <meta name="description" content="Protokol z proběhlého testování. Zobrazuje průběhy provedených testů a jejich
+    výsledky včetně dalších detailů jako jsou referenční a reálné výstupy, návratové kódy apod." />
+    <meta name="author" content="Michal Šmahel (xsmahe01)" />
+
+    <style>
+        /* Unfortunately external sources are forbidden, so CSS code must be here */
+
+        /* GENERAL */
+        * {
+          box-sizing: border-box;
+        }
+
+        html,
+        body {
+          padding: 0;
+          margin: 0;
+          width: 100%;
+          height: 100%;
+        }
+
+        a {
+          text-decoration: none;
+          user-select: none;
+          -moz-user-select: none;
+          -ms-user-select: none;
+          -webkit-user-select: none;
+        }
+
+        .hide {
+          display: none !important;
+        }
+
+        /* LAYOUT */
+        body {
+          background: whitesmoke;
+          display: grid;
+          grid-template-rows: 5em auto 3em;
+          grid-template-columns: 1fr 70% 1fr;
+          grid-template-areas:
+            "header header header"
+            ". main ."
+            "footer footer footer";
+        }
+
+        .main-header {
+          grid-area: header;
+          padding: 0 3em;
+          border-bottom: 1px solid gray;
+        }
+
+        .main-container {
+          grid-area: main;
+        }
+
+        .main-footer {
+          grid-area: footer;
+          justify-self: center;
+          align-self: center;
+        }
+
+        /* COMPONENTS */
+        .main-heading {
+          color: #1d538c;
+        }
+
+        .test-table {
+          border-collapse: collapse;
+        }
+
+        .test-table .table-row {
+
+        }
+
+        .test-table .table-row.successful {
+          background: #56c485;
+        }
+
+        .test-table .table-row.failed {
+          background: #dc7171;
+        }
+
+        .test-table .table-cell {
+          border: 1px solid black;
+          padding: .2em .5em;
+        }
+
+        .test-table .table-row.header-row .table-cell.percentage:after {
+          content: "100 %";
+          display: block;
+          height: 0;
+          overflow: hidden;
+        }
+
+        .test-table .table-cell.percentage {
+          text-align: right;
+        }
+
+        .test-table .table-row.header-row .table-cell.percentage {
+          text-align: center;
+        }
+
+        .test-table .table-row.test-detail .table-cell {
+          padding: 0;
+        }
+
+        .test-detail .exit-codes {
+          display: flex;
+          justify-content: space-between;
+          border-bottom: 1px solid lightgray;
+          padding: .5em;
+        }
+
+        .test-detail .outputs {
+          padding: .5em;
+        }
+
+        .test-detail .outputs .reference, .test-detail .outputs .real {
+          display: flex;
+          flex-direction: column;
+        }
+
+        .test-detail .outputs .real {
+          margin-top: .3em;
+        }
+
+        .test-detail .value {
+          border: 1px dashed rgba(173, 130, 103, 0.2);
+          padding: .1em;
+        }
+
+        .test-detail .value:empty {
+          border: none;
+        }
+
+        .test-detail .value:empty:after {
+          content: "N/A";
+          color: gray;
+        }
+
+        .detail-button {
+          color: #eff3f3;
+          text-shadow: 1px 1px #adb6b6;
+        }
+
+        .detail-button:after {
+          content: attr(data-name);
+          display: block;
+          height: 0;
+          overflow: hidden;
+          font-weight: bold;
+        }
+
+        .detail-button:hover {
+          font-weight: bold;
+        }
+
+        .summary {
+          display: flex;
+          justify-content: space-between;
+          width: 25em;
+          margin-bottom: .5em;
+        }
+        
+        .summary .percentage {
+          color: #424040;
+        }
+    </style>
+
+    <title>IPP - projekt | Testovací protokol</title>
+</head>
+
+
+<body>
+    <header class="main-header">
+        <h1 class="main-heading">Testovací protokol k projektu z předmětu IPP</h1>
+    </header>
+
+    <main class="main-container">
+        <header>
+            <h2>Provedené testy</h2>
+        </header>
+
+        <section>
+            <article>
+                <header>
+                    <h3>Shrnutí testů podle adresářů</h3>
+                </header>
+
+                <section>
+                    <table class="test-table">
+                        <thead>
+                        <tr class="table-row header-row">
+                            <th class="table-cell">Adresář</th>
+                            <th class="table-cell">Úspěšné</th>
+                            <th class="table-cell">Neúspěšné</th>
+                            <th class="table-cell percentage">%</th>
+                        </tr>
+                        </thead>
+
+                        <tbody>
+                        <tr class="table-row successful">
+                            <td class="table-cell">supplementary-tests/int-only</td>
+                            <td class="table-cell">11</td>
+                            <td class="table-cell">0</td>
+                            <td class="table-cell percentage">100&nbsp;%</td>
+                        </tr>
+                        <tr class="table-row failed">
+                            <td class="table-cell">supplementary-tests/parse-only</td>
+                            <td class="table-cell">42</td>
+                            <td class="table-cell">5</td>
+                            <td class="table-cell percentage">89&nbsp;%</td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </section>
+            </article>
+
+            <article>
+                <header>
+                    <h3>Kompletní přehled testů</h3>
+                </header>
+
+                <section>
+                    <div class="summary">
+                        <div class="summary-item">
+                            <strong>Celkem: </strong><span>58</span>
+                        </div>
+                        <div class="summary-item">
+                            <strong>Úspěšné: </strong><span>53</span> <span class="percentage">(91&nbsp;%)</span>
+                        </div>
+                        <div class="summary-item">
+                            <strong>Neúspěšné: </strong><span>5</span> <span class="percentage">(9&nbsp;%)</span>
+                        </div>
+                    </div>
+
+                    <table class="test-table">
+                        <thead>
+                        <tr class="table-row header-row">
+                            <th class="table-cell">Adresář</th>
+                            <th class="table-cell">Test</th>
+                            <th class="table-cell">Stav</th>
+                            <th class="table-cell"><!-- Detail --></th>
+                        </tr>
+                        </thead>
+
+                        <tbody>
+                        <tr class="table-row successful">
+                            <td class="table-cell">supplementary-tests/int-only</td>
+                            <td class="table-cell">Stack test</td>
+                            <td class="table-cell">Úspěch</td>
+                            <td class="table-cell"><a href="javascript:void();" class="detail-button __show-detail"
+                                                      data-for="1" data-name="Detail">Detail</a></td>
+                        </tr>
+                        <tr class="table-row test-detail __test-detail hide" data-id="1">
+                            <td colspan="4" class="table-cell">
+                                <div class="exit-codes">
+                                    <div class="reference">
+                                        <strong>Požadovaný návratový kód: </strong>
+                                        <span class="value">0</span>
+                                    </div>
+                                    <div class="real">
+                                        <strong>Návratový kód: </strong>
+                                        <span class="value">0</span>
+                                    </div>
+                                </div>
+
+                                <div class="outputs">
+                                    <div class="reference">
+                                        <strong>Požadovaný výstup: </strong>
+                                        <span class="value">Hello world</span>
+                                    </div>
+                                    <div class="real">
+                                        <strong>Výstup:</strong>
+                                        <span class="value">Hello world</span>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr class="table-row failed">
+                            <td class="table-cell">supplementary-tests/parse-only</td>
+                            <td class="table-cell">Read test</td>
+                            <td class="table-cell">Chybný návratový kód</td>
+                            <td class="table-cell"><a href="javascript:void();" class="detail-button __show-detail"
+                                                      data-for="2" data-name="Detail">Detail</a></td>
+                        </tr>
+                        <tr class="table-row test-detail __test-detail hide" data-id="2">
+                            <td colspan="4" class="table-cell">
+                                <div class="exit-codes">
+                                    <div class="reference">
+                                        <strong>Požadovaný návratový kód: </strong>
+                                        <span class="value">21</span>
+                                    </div>
+                                    <div class="real">
+                                        <strong>Návratový kód: </strong>
+                                        <span class="value">0</span>
+                                    </div>
+                                </div>
+
+                                <div class="outputs">
+                                    <div class="reference">
+                                        <strong>Požadovaný výstup: </strong>
+                                        <span class="value"></span>
+                                    </div>
+                                    <div class="real">
+                                        <strong>Výstup:</strong>
+                                        <span class="value"></span>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </section>
+            </article>
+        </section>
+    </main>
+
+    <footer class="main-footer">
+        Vytvořil Michal Šmahel (xsmahe01) v rámci projektu <a href="https://www.fit.vut.cz/study/course/IPP/
+        .cs">IPP</a> na <a href="https://www.fit.vut.cz/.cs">FIT VUT</a>.
+    </footer>
+
+    <script>
+        document.querySelectorAll(".__show-detail").forEach(button => button.addEventListener("click", _ => {
+            const detail = document.querySelector(".__test-detail[data-id='" + button.getAttribute("data-for") + "']");
+            detail.classList.toggle("hide");
+        }));
+    </script>
+</body>
+</html>
