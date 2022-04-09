@@ -21,8 +21,9 @@ interface DiffProgram
      *
      * @param string $firstFile First file to compare
      * @param string $secondFile Second file to compare
+     * @param string|null $deltaFile File where to save difference (will be overwritten)
      *
      * @return bool Are contents of these files the same?
      */
-    public function fileDiff(string $firstFile, string $secondFile): bool;
+    public function fileDiff(string $firstFile, string $secondFile, ?string $deltaFile = null): bool;
 }

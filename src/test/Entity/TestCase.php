@@ -17,11 +17,6 @@ class TestCase
 {
 
     /**
-     * Temporary directory for storing temporary help files for testing
-     */
-    private const TEST_TMP_DIR = "tmp";
-
-    /**
      * @var string Name of the test
      */
     private string $name;
@@ -33,15 +28,22 @@ class TestCase
      * @var string Test root directory
      */
     private string $testRootDir;
+    /**
+     * @var string Temporary directory for storing temporary help files for testing
+     */
+    private string $testTmpDir;
 
     /**
      * Class constructor
      *
      * @param string $pathToTest Path to the test universal filename (without extension)
+     * @param string $testRootDir Path to the test root directory
+     * @param string $testTmpDir Path to the temporary directory for storing temporary help files for testing
      */
-    public function __construct(string $pathToTest, string $testRootDir)
+    public function __construct(string $pathToTest, string $testRootDir, string $testTmpDir)
     {
-        $this->testRootDir = $testRootDir;
+        $this->testRootDir = rtrim($testRootDir, '/');
+        $this->testTmpDir = rtrim($testTmpDir, '/');
 
         $this->createFromPath($pathToTest);
     }
@@ -190,7 +192,7 @@ class TestCase
      */
     public function getOutputFile(): string
     {
-        return posix_getcwd() . "/" . self::TEST_TMP_DIR . "/{$this->getPath()}.out";
+        return posix_getcwd() . "/$this->testTmpDir/{$this->getPath()}.out";
     }
 
     /**
@@ -200,6 +202,6 @@ class TestCase
      */
     public function getTempFile(): string
     {
-        return posix_getcwd() . "/" . self::TEST_TMP_DIR . "/{$this->getPath()}.tmp";
+        return posix_getcwd() . "/$this->testTmpDir/{$this->getPath()}.tmp";
     }
 }
