@@ -11,6 +11,7 @@ declare(strict_types=1);
 namespace Test\Cli;
 
 use Test\Enum\ExitCode;
+use Test\Enum\TestStyle;
 use Test\Exceptions\BadNumberOfInputArgsException;
 use Test\Exceptions\InvalidDirOrFileArgException;
 use Test\Exceptions\InvalidInputArgValueException;
@@ -70,13 +71,48 @@ class CliArgParser
         $shortSwitches = '';
         // All switches have optional value (::), it is for better input validation only
         $longSwitches = [
-            'help::', 'directory:', 'recursive::', 'parse-script:', 'int-script:', 'parse-only::', 'int-only::',
-            'jexampath:', 'noclean::'
+            'help::',
+            'directory:',
+            'recursive::',
+            'parse-script:',
+            'int-script:',
+            'parse-only::',
+            'int-only::',
+            'jexampath:',
+            'noclean::'
         ];
         $usedInputArgs = 0;
 
         $this->parsedArgs = getopt($shortSwitches, $longSwitches, $usedInputArgs);
 
+        $this->checkInputArgs($usedInputArgs);
+
+        // Better test style (composition of parse-only and int-only)
+        if(isset($this->parsedArgs['parse-only'])) {
+            $this->parsedArgs['test-style'] = TestStyle::PARSE;
+        }
+        else if(isset($this->parsedArgs['int-only'])) {
+            $this->parsedArgs['test-style'] = TestStyle::INTERPRETER;
+        }
+        else {
+            $this->parsedArgs['test-style'] = TestStyle::BOTH;
+        }
+
+        unset($this->parsedArgs['parse-only']);
+        unset($this->parsedArgs['int-only']);
+    }
+
+    /**
+     * Checks input arguments
+     *
+     * @param int $usedInputArgs Number of arguments used when parsing
+     *
+     * @return void
+     * @throws BadNumberOfInputArgsException Too many input args given
+     * @throws InvalidInputArgValueException Missing required value of argument or excess value of switch
+     */
+    private function checkInputArgs(int $usedInputArgs): void
+    {
         // --help must be used alone
         if(key_exists('help', $this->parsedArgs) && $this->argc > 2) {
             throw new BadNumberOfInputArgsException("You can't use any other input argument alongside --help");
@@ -145,12 +181,16 @@ class CliArgParser
     {
         // Check validity of directory arguments
         $directoryArguments = ['directory', 'jexampath'];
-        foreach($directoryArguments as $argument) {
+        foreach($directoryArguments as &$argument) {
             $directory = $this->parsedArgs[$argument];
             if(!file_exists($directory) || !is_dir($directory) || !is_readable($directory)) {
                 throw new InvalidDirOrFileArgException("Directory '$directory' in --$argument isn't valid.");
             }
+
+            // Convert to better path structure
+            $this->parsedArgs[$argument] = realpath($this->parsedArgs[$argument]);
         }
+        unset($argument);
 
         // Check validity of source files arguments
         $scriptFileArguments = ['parse-script', 'int-script'];
@@ -163,6 +203,9 @@ class CliArgParser
             if(!file_exists($file) || !is_file($file) || !is_readable($file)) {
                 throw new InvalidDirOrFileArgException("File '$file' in --$argument isn't valid.");
             }
+
+            // Convert to better path structure
+            $this->parsedArgs[$argument] = realpath($this->parsedArgs[$argument]);
         }
     }
 
@@ -215,14 +258,72 @@ class CliArgParser
     }
 
     /**
-     * Returns a value of the argument
+     * Getter for directory input argument
      *
-     * @param string $argName Name of the argument
-     *
-     * @return string|null Argument's value of null if argument isn't given
+     * @return string Path to test directory
      */
-    public function getArgValue(string $argName): ?string
+    public function getDirectory(): string
     {
-        return $this->parsedArgs[$argName] ?? null;
+        return $this->parsedArgs['directory'];
+    }
+
+    /**
+     * Getter for recursive input argument
+     *
+     * @return bool Do the recursive search of the test cases?
+     */
+    public function isRecursive(): bool
+    {
+        return isset($this->parsedArgs['recursive']);
+    }
+
+    /**
+     * Getter for parse-script input argument
+     *
+     * @return string Path to the parse script (parse.php)
+     */
+    public function getParseScript(): string
+    {
+        return $this->parsedArgs['parse-script'];
+    }
+
+    /**
+     * Getter for int-script input argument
+     *
+     * @return string Path to the interpreter script (interpreter.py)
+     */
+    public function getIntScript(): string
+    {
+        return $this->parsedArgs['int-script'];
+    }
+
+    /**
+     * Getter for jexampath input argument
+     *
+     * @return string Path to the directory with JExamPath program
+     */
+    public function getJExamPath(): string
+    {
+        return $this->parsedArgs['jexampath'];
+    }
+
+    /**
+     * Getter for noclean input argument
+     *
+     * @return bool Could be temporary files preserved (not cleaned)?
+     */
+    public function isNoClean(): bool
+    {
+        return isset($this->parsedArgs['noclean']);
+    }
+
+    /**
+     * Getter for test style (combination of parse-only and int-only input arguments)
+     *
+     * @return TestStyle What to be tested
+     */
+    public function getTestStyle(): TestStyle
+    {
+        return $this->parsedArgs['test-style'];
     }
 }

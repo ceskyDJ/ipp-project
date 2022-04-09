@@ -42,8 +42,8 @@ class JExamXmlDiff implements DiffProgram
      */
     public function __construct(string $pathToJExamXml, string $tmpDir)
     {
-        $this->pathToJExamXml = rtrim($pathToJExamXml, '/');
-        $this->tmpDir = rtrim($tmpDir, '/');
+        $this->pathToJExamXml = $pathToJExamXml;
+        $this->tmpDir = $tmpDir;
     }
 
     /**

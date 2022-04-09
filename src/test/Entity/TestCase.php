@@ -42,8 +42,8 @@ class TestCase
      */
     public function __construct(string $pathToTest, string $testRootDir, string $testTmpDir)
     {
-        $this->testRootDir = rtrim($testRootDir, '/');
-        $this->testTmpDir = rtrim($testTmpDir, '/');
+        $this->testRootDir = $testRootDir;
+        $this->testTmpDir = $testTmpDir;
 
         $this->createFromPath($pathToTest);
     }
@@ -62,10 +62,7 @@ class TestCase
         $this->name = rtrim(array_pop($testPathParts), '/');
         $directoryWithTest = implode('/', $testPathParts);
 
-        $testRealPath = realpath($directoryWithTest);
-        $rootRealPath = realpath($this->testRootDir); // Just testing root
-
-        $this->namespace = ltrim(str_replace($rootRealPath, '', $testRealPath), '/');
+        $this->namespace = $directoryWithTest;
     }
 
     /**

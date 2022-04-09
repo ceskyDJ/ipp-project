@@ -10,9 +10,15 @@ declare(strict_types=1);
 
 use Test\Cli\CliArgParser;
 use Test\Enum\ExitCode;
+use Test\Enum\TestStyle;
 use Test\Exceptions\BadNumberOfInputArgsException;
+use Test\Exceptions\InternalErrorException;
 use Test\Exceptions\InvalidDirOrFileArgException;
 use Test\Exceptions\InvalidInputArgValueException;
+use Test\Testing\Tester;
+use Test\Tools\JExamXmlDiff;
+use Test\Tools\TmpManager;
+use Test\Tools\UnixDiff;
 
 ini_set('display_errors', 'stderr');
 
@@ -24,6 +30,7 @@ spl_autoload_register(function(string $fullyQualifiedClassName) {
     require_once __DIR__ . "/test/$asPath.php";
 });
 
+// Process CLI input arguments
 // Warning: for using $argc and $argv register_argc_argv must be enabled
 try {
     $cliArgParser = new CliArgParser($argc, $argv);
@@ -34,5 +41,27 @@ try {
 }
 
 // Needed objects
+try {
+    $tmpManager = TmpManager::getInstance(!$cliArgParser->isNoClean());
+} catch(InternalErrorException $e) {
+    exit(ExitCode::INTERNAL_ERROR->value);
+}
+
+if($cliArgParser->getTestStyle() == TestStyle::PARSE) {
+    $diffProgram = new JExamXmlDiff($cliArgParser->getJExamPath(), $tmpManager->getTmpDir());
+} else {
+    $diffProgram = new UnixDiff;
+}
+
+$tester = new Tester(
+    $diffProgram,
+    $cliArgParser->getTestStyle(),
+    $cliArgParser->isRecursive(),
+    $cliArgParser->getDirectory(),
+    $tmpManager->getTmpDir(),
+    $cliArgParser->getParseScript(),
+    $cliArgParser->getIntScript()
+);
 
 // Start processing
+var_dump($tester->createTestSuite());
