@@ -22,7 +22,7 @@ class TestReport
 {
 
     /**
-     * @var Test[] Run tests
+     * @var TakenTest[] Run tests
      */
     private array $runTests = [];
     /**
@@ -45,11 +45,11 @@ class TestReport
     /**
      * Adds a new test to the report
      *
-     * @param Test $test Test to add
+     * @param TakenTest $test Test to add
      *
      * @return void
      */
-    public function addTest(Test $test): void
+    public function addTest(TakenTest $test): void
     {
         $this->runTests[] = $test;
     }
@@ -116,7 +116,7 @@ class TestReport
     /**
      * Getter for run tests
      *
-     * @return Test[] Run tests
+     * @return TakenTest[] Run tests
      */
     public function getTests(): array
     {

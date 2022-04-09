@@ -13,9 +13,9 @@ namespace Test\Entity;
 use Test\Enum\TestStatus;
 
 /**
- * Representation of ran test
+ * Representation of taken (run) test
  */
-class Test
+class TakenTest
 {
 
     /**
