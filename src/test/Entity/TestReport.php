@@ -12,28 +12,33 @@ namespace Test\Entity;
 
 use DateInterval;
 use DateTime;
-use Test\Enum\TestStatus;
+use Iterator;
 use Test\Exceptions\SetEndOfTestingTwiceError;
 use Test\Exceptions\TestingNotYetCompletedError;
 
 /**
  * Representation of report with executed tests
  */
-class TestReport
+class TestReport implements Iterator
 {
 
     /**
-     * @var TakenTest[] Run tests
+     * @var TestGroup[] Groups of taken tests
      */
-    private array $runTests = [];
+    private array $takenTestGroups = [];
     /**
      * @var DateTime Time when testing started
      */
     private DateTime $start;
     /**
-     * @var DateTime Time when testing ended
+     * @var DateTime|null Time when testing ended
      */
     private ?DateTime $end = null;
+
+    /**
+     * @var int Currently selected group
+     */
+    private int $selectedGroup = 0;
 
     /**
      * Class constructor
@@ -41,6 +46,25 @@ class TestReport
     public function __construct()
     {
         $this->start = new DateTime;
+    }
+
+    /**
+     * Returns group at n-th key
+     *
+     * @param int $position Position of the key
+     *
+     * @return TestGroup|null Test group at the selected key or for out of array bounds
+     */
+    private function getGroupAt(int $position): ?TestGroup
+    {
+        $keys = array_keys($this->takenTestGroups);
+
+        // Out of bound of the array with test groups
+        if($position >= sizeof($keys)) {
+            return null;
+        }
+
+        return $this->takenTestGroups[$keys[$position]];
     }
 
     /**
@@ -52,7 +76,13 @@ class TestReport
      */
     public function addTest(TakenTest $test): void
     {
-        $this->runTests[] = $test;
+        $group = $test->getNamespace();
+
+        if(!key_exists($group, $this->takenTestGroups)) {
+            $this->takenTestGroups[$group] = new TestGroup($group);
+        }
+
+        $this->takenTestGroups[$group]->addTest($test);
     }
 
     /**
@@ -77,14 +107,11 @@ class TestReport
      */
     public function countSuccessful(): int
     {
-        $successful = 0;
-        foreach($this->runTests as $test) {
-            if($test->getStatus() == TestStatus::SUCCESS) {
-                $successful++;
-            }
-        }
-
-        return $successful;
+        return array_reduce(
+            $this->takenTestGroups,
+            fn(int $successful, TestGroup $group) => $successful + $group->countSuccessful(),
+            0
+        );
     }
 
     /**
@@ -94,14 +121,25 @@ class TestReport
      */
     public function countFailed(): int
     {
-        $failed = 0;
-        foreach($this->runTests as $test) {
-            if($test->getStatus() == TestStatus::BAD_EXIT_CODE || $test->getStatus() == TestStatus::BAD_OUTPUT) {
-                $failed++;
-            }
-        }
+        return array_reduce(
+            $this->takenTestGroups,
+            fn(int $failed, TestGroup $group) => $failed + $group->countFailed(),
+            0
+        );
+    }
 
-        return $failed;
+    /**
+     * Count number of ran tests
+     *
+     * @return int Number of ran tests
+     */
+    public function countTests(): int
+    {
+        return array_reduce(
+            $this->takenTestGroups,
+            fn(int $tests, TestGroup $group) => $tests + $group->countTests(),
+            0
+        );
     }
 
     /**
@@ -120,12 +158,78 @@ class TestReport
     }
 
     /**
-     * Getter for run tests
+     * Getter for grouped taken tests
      *
-     * @return TakenTest[] Run tests
+     * @return TestGroup[] Grouped taken tests
      */
-    public function getTests(): array
+    public function getTestGroups(): array
     {
-        return $this->runTests;
+        return $this->takenTestGroups;
+    }
+
+    /**
+     * Returns current test
+     *
+     * @return TakenTest Currently selected taken test
+     */
+    public function current(): TakenTest
+    {
+        $group = $this->getGroupAt($this->selectedGroup);
+
+        return $group->current();
+    }
+
+    /**
+     * Move to the next test
+     *
+     * @return void
+     */
+    public function next(): void
+    {
+        $currentGroup = $this->getGroupAt($this->selectedGroup);
+        $currentGroup->next();
+
+        // Current group has been completely iterated, let's move to the next one
+        if(!$currentGroup->valid()) {
+            $this->selectedGroup++;
+
+            // When there is some group at the new position, reset its iterator
+            $nextGroup = $this->getGroupAt($this->selectedGroup);
+            $nextGroup?->rewind();
+        }
+    }
+
+    /**
+     * Returns number of currently processed group of tests
+     *
+     * @return int Number of currently processed test group
+     */
+    public function key(): int
+    {
+        return $this->selectedGroup;
+    }
+
+    /**
+     * Checks if there is more tests
+     *
+     * @return bool Are there more tests?
+     */
+    public function valid(): bool
+    {
+        return $this->selectedGroup < sizeof($this->takenTestGroups);
+    }
+
+    /**
+     * Selects the first test
+     *
+     * @return void
+     */
+    public function rewind(): void
+    {
+        $this->selectedGroup = 0;
+
+        // Reset iterator of the first group, if there is some
+        $firstGroup = $this->getGroupAt(0);
+        $firstGroup?->rewind();
     }
 }

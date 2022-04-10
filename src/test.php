@@ -14,6 +14,7 @@ use Test\Exceptions\BadNumberOfInputArgsException;
 use Test\Exceptions\InternalErrorException;
 use Test\Exceptions\InvalidDirOrFileArgException;
 use Test\Exceptions\InvalidInputArgValueException;
+use Test\Testing\SummaryCreator;
 use Test\Testing\TesterFactory;
 use Test\Tools\DiffProgramFactory;
 use Test\Tools\TmpManager;
@@ -48,12 +49,12 @@ try {
 $diffProgram = DiffProgramFactory::createDiffProgram($cliArgParser, $tmpManager);
 $tester = TesterFactory::createTester($cliArgParser, $diffProgram, $tmpManager);
 
+$summaryCreator = new SummaryCreator;
+
 // Start processing
 $testSuite = $tester->createTestSuite();
+
 $testReport = $tester->test($testSuite);
 $testReport->setEnd();
 
-var_dump($testReport);
-var_dump($testReport->countTestingLength());
-var_dump($testReport->countSuccessful());
-var_dump($testReport->countFailed());
+echo $summaryCreator->create($testReport);

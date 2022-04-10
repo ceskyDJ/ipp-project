@@ -118,14 +118,14 @@ class TakenTest
     /**
      * Getter for output of the tested script
      *
-     * @return string|null Real output of the tested script or null if the script returned nothing
+     * @return string Real output of the tested script or null if the script returned nothing
      */
-    public function getOutput(): ?string
+    public function getOutput(): string
     {
         $outputFile = $this->testCase->getOutputFile();
 
         if(!file_exists($outputFile)) {
-            return null;
+            return "";
         }
 
         return file_get_contents($outputFile);

@@ -24,9 +24,14 @@ class SummaryCreator
      * @param TestReport $testReport Test report with run tests
      *
      * @return string HTML summary
+     * @noinspection PhpUnusedParameterInspection Parameters are used in the template file
      */
     public function create(TestReport $testReport): string
     {
-        // TODO: implement this method
+        ob_start();
+
+        include __DIR__ . '/../../templates/test-report.phtml';
+
+        return ob_get_clean();
     }
 }
