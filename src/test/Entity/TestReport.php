@@ -14,6 +14,7 @@ use DateInterval;
 use DateTime;
 use Test\Enum\TestStatus;
 use Test\Exceptions\SetEndOfTestingTwiceError;
+use Test\Exceptions\TestingNotYetCompletedError;
 
 /**
  * Representation of report with executed tests
@@ -62,7 +63,7 @@ class TestReport
      */
     public function setEnd(): void
     {
-        if($this->end == null) {
+        if($this->end != null) {
             throw new SetEndOfTestingTwiceError("Testing could be set as ended only once for each test report");
         }
 
@@ -110,6 +111,11 @@ class TestReport
      */
     public function countTestingLength(): DateInterval
     {
+        if($this->end == null) {
+            throw new TestingNotYetCompletedError("Testing hasn't been completed yet. Call TestReport::setEnd()
+            before this method");
+        }
+
         return $this->end->diff($this->start, true);
     }
 
