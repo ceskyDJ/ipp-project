@@ -83,6 +83,22 @@ class TestCase
     }
 
     /**
+     * Prepares directory structure for given path
+     *
+     * @param string $path Path that needs to have a valid directory structure
+     *
+     * @return void
+     */
+    private function prepareDirectoryStructure(string $path): void
+    {
+        if(file_exists($path)) {
+            return;
+        }
+
+        mkdir($path, 0777, true);
+    }
+
+    /**
      * Getter for test name
      *
      * @return string Test name
@@ -109,7 +125,7 @@ class TestCase
      */
     public function getPath(): string
     {
-        return "$this->namespace/$this->name";
+        return $this->namespace != '' ? "$this->namespace/$this->name" : $this->name;
     }
 
     /**
@@ -196,7 +212,9 @@ class TestCase
      */
     public function getOutputFile(): string
     {
-        return posix_getcwd() . "/$this->testTmpDir/{$this->getPath()}.out";
+        $this->prepareDirectoryStructure("$this->testTmpDir/$this->namespace");
+
+        return "$this->testTmpDir/{$this->getPath()}.out";
     }
 
     /**
@@ -206,6 +224,8 @@ class TestCase
      */
     public function getTempFile(): string
     {
-        return posix_getcwd() . "/$this->testTmpDir/{$this->getPath()}.tmp";
+        $this->prepareDirectoryStructure("$this->testTmpDir/$this->namespace");
+
+        return "$this->testTmpDir/{$this->getPath()}.tmp";
     }
 }
