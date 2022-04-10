@@ -55,7 +55,7 @@ class TmpManager
     {
         // Clean temporary directory if it should be cleaned
         if($this->clean) {
-            rmdir($this->tmpDir);
+            system("rm -rf $this->tmpDir");
         }
     }
 
