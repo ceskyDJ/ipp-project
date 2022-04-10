@@ -92,8 +92,13 @@ abstract class Tester
             // Path to the item from test root directory
             $itemPath = $path != '' ? "$path/$item" : $item;
 
-            if(is_file("$this->testRootDir/$itemPath") && !str_starts_with($item, '.')) {
-                // Files (except hidden ones) are used for testing --> add to test cases list
+            if(is_file("$this->testRootDir/$itemPath")) {
+                // Hidden files and files with bad extension are skipped
+                if(str_starts_with($item, '.') || preg_match("%\.(src|in|out|rc)$%", $item) === 0) {
+                    continue;
+                }
+
+                // Files are used for testing --> add to test cases list
                 // When the extension is dropped, the rest of the name is the name of test case
                 $nameWithoutExtension = preg_replace("%\.[^.]+$%", '', $itemPath);
                 if(!in_array($nameWithoutExtension, $testCases)) {
