@@ -10,6 +10,7 @@ declare(strict_types=1);
 
 namespace Test\Testing;
 
+use Test\Entity\TakenTest;
 use Test\Entity\TestCase;
 use Test\Entity\TestReport;
 use Test\Tools\DiffProgram;
@@ -55,8 +56,23 @@ class BothTester extends Tester
         foreach($testSuite as $testCase) {
             $exitCode = null;
             $output = null;
+            $inFile = $testCase->getInputFile();
+            $srcFile = $testCase->getSourceCodeFile();
+            $outFile = $testCase->getOutputFile();
+            $tmpFile = $testCase->getTempFile();
 
-            exec("", $output, $exitCode);
+            // Source code is given to parse.php for translation into XML representation
+            $parsePart = "php8.1 $this->parseScript < $srcFile";
+            // XML representation is given to the stdin of interpreter, user input is given by --input argument
+            // output is redirected to the final file
+            $intPart = "python3.8 $this->intScript --input $inFile > $outFile";
+            // parse.php and interpreter.py parts are composited into final Shell pipeline
+            // tee is used for backing up the XML representation created by parse.php
+            exec("$parsePart | tee $tmpFile | $intPart", $output, $exitCode);
+
+            $testState = $this->verifyTestResult($testCase, (int)$exitCode);
+
+            $report->addTest(new TakenTest($testCase, $testState, (int)$exitCode));
         }
 
         return $report;

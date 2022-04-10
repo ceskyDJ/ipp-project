@@ -49,4 +49,11 @@ $diffProgram = DiffProgramFactory::createDiffProgram($cliArgParser, $tmpManager)
 $tester = TesterFactory::createTester($cliArgParser, $diffProgram, $tmpManager);
 
 // Start processing
-var_dump($tester->createTestSuite());
+$testSuite = $tester->createTestSuite();
+$testReport = $tester->test($testSuite);
+$testReport->setEnd();
+
+var_dump($testReport);
+var_dump($testReport->countTestingLength());
+var_dump($testReport->countSuccessful());
+var_dump($testReport->countFailed());

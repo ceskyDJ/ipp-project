@@ -12,6 +12,7 @@ namespace Test\Testing;
 
 use Test\Entity\TestCase;
 use Test\Entity\TestReport;
+use Test\Enum\TestStatus;
 use Test\Tools\DiffProgram;
 
 /**
@@ -105,6 +106,33 @@ abstract class Tester
         }
 
         return $testCases;
+    }
+
+    /**
+     * Verifies test result
+     *
+     * @param TestCase $testCase Test case that is tested
+     * @param int $exitCode Exit code returned by tested script
+     *
+     * @return TestStatus Final status of the test (success/failed + details)
+     */
+    protected function verifyTestResult(TestCase $testCase, int $exitCode): TestStatus
+    {
+        if($testCase->getReferenceExitCode() != 0) {
+            // Reference exit code != 0 --> only exit code must be checked
+            return $exitCode == $testCase->getReferenceExitCode()
+                ? TestStatus::SUCCESS
+                : TestStatus::BAD_EXIT_CODE;
+        } else {
+            // Classic behaviour --> exit code and output must be checked
+            if($exitCode != 0) {
+                return TestStatus::BAD_EXIT_CODE;
+            } else {
+                return $this->diffProgram->fileDiff($testCase->getOutputFile(), $testCase->getReferenceOutputFile())
+                    ? TestStatus::SUCCESS
+                    : TestStatus::BAD_OUTPUT;
+            }
+        }
     }
 
     /**

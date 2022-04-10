@@ -10,6 +10,7 @@ declare(strict_types=1);
 
 namespace Test\Testing;
 
+use Test\Entity\TakenTest;
 use Test\Entity\TestCase;
 use Test\Entity\TestReport;
 use Test\Tools\DiffProgram;
@@ -55,8 +56,15 @@ class InterpreterTester extends Tester
         foreach($testSuite as $testCase) {
             $exitCode = null;
             $output = null;
+            $inFile = $testCase->getInputFile();
+            $srcFile = $testCase->getSourceCodeFile();
+            $outFile = $testCase->getOutputFile();
 
-            exec("", $output, $exitCode);
+            exec("python3.8 $this->intScript --source $srcFile < $inFile > $outFile", $output, $exitCode);
+
+            $testState = $this->verifyTestResult($testCase, (int)$exitCode);
+
+            $report->addTest(new TakenTest($testCase, $testState, (int)$exitCode));
         }
 
         return $report;
