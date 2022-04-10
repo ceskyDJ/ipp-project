@@ -12,25 +12,19 @@ namespace Test\Testing;
 
 use Test\Entity\TestCase;
 use Test\Entity\TestReport;
-use Test\Enum\TestStyle;
-use Test\Exceptions\InternalErrorException;
 use Test\Tools\DiffProgram;
 
 /**
- * Tester for managing (creating a running) tests
+ * Abstract tester for managing tests that holds creating of test suites
  */
-class Tester
+abstract class Tester
 {
 
     /**
      * @var DiffProgram Program for comparing files (dependency)
      */
-    private DiffProgram $diffProgram;
+    protected DiffProgram $diffProgram;
 
-    /**
-     * @var TestStyle What to be tested
-     */
-    private TestStyle $testStyle;
     /**
      * @var bool Could be tests loaded recursively?
      */
@@ -38,25 +32,24 @@ class Tester
     /**
      * @var string Directory with tests to process
      */
-    private string $testRootDir;
+    protected string $testRootDir;
     /**
      * @var string Directory for storing temporary files
      */
-    private string $tmpDir;
+    protected string $tmpDir;
     /**
      * @var string Path to the parse script (parse.php)
      */
-    private string $parseScript;
+    protected string $parseScript;
     /**
      * @var string Path to the interpreter script
      */
-    private string $intScript;
+    protected string $intScript;
 
     /**
      * Class constructor
      *
      * @param DiffProgram $diffProgram Program for comparing files (dependency)
-     * @param TestStyle $testStyle What to be tested
      * @param bool $recursive Could be tests loaded recursively?
      * @param string $testRootDir Path to the directory with test cases to process
      * @param string $tmpDir Path to the directory for storing temporary files
@@ -65,7 +58,6 @@ class Tester
      */
     public function __construct(
         DiffProgram $diffProgram,
-        TestStyle $testStyle,
         bool $recursive,
         string $testRootDir,
         string $tmpDir,
@@ -74,7 +66,6 @@ class Tester
     ) {
         $this->diffProgram = $diffProgram;
 
-        $this->testStyle = $testStyle;
         $this->recursive = $recursive;
         $this->testRootDir = $testRootDir;
         $this->tmpDir = $tmpDir;
@@ -138,8 +129,5 @@ class Tester
      *
      * @return TestReport Generated test report
      */
-    public function test(array $testSuite): TestReport
-    {
-        // TODO: implement this method
-    }
+    public abstract function test(array $testSuite): TestReport;
 }

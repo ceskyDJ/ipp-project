@@ -10,15 +10,13 @@ declare(strict_types=1);
 
 use Test\Cli\CliArgParser;
 use Test\Enum\ExitCode;
-use Test\Enum\TestStyle;
 use Test\Exceptions\BadNumberOfInputArgsException;
 use Test\Exceptions\InternalErrorException;
 use Test\Exceptions\InvalidDirOrFileArgException;
 use Test\Exceptions\InvalidInputArgValueException;
-use Test\Testing\Tester;
-use Test\Tools\JExamXmlDiff;
+use Test\Testing\TesterFactory;
+use Test\Tools\DiffProgramFactory;
 use Test\Tools\TmpManager;
-use Test\Tools\UnixDiff;
 
 ini_set('display_errors', 'stderr');
 
@@ -47,21 +45,8 @@ try {
     exit(ExitCode::INTERNAL_ERROR->value);
 }
 
-if($cliArgParser->getTestStyle() == TestStyle::PARSE) {
-    $diffProgram = new JExamXmlDiff($cliArgParser->getJExamPath(), $tmpManager->getTmpDir());
-} else {
-    $diffProgram = new UnixDiff;
-}
-
-$tester = new Tester(
-    $diffProgram,
-    $cliArgParser->getTestStyle(),
-    $cliArgParser->isRecursive(),
-    $cliArgParser->getDirectory(),
-    $tmpManager->getTmpDir(),
-    $cliArgParser->getParseScript(),
-    $cliArgParser->getIntScript()
-);
+$diffProgram = DiffProgramFactory::createDiffProgram($cliArgParser, $tmpManager);
+$tester = TesterFactory::createTester($cliArgParser, $diffProgram, $tmpManager);
 
 // Start processing
 var_dump($tester->createTestSuite());

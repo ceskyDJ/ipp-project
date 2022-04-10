@@ -159,7 +159,14 @@ class TestCase
      */
     public function getReferenceExitCode(): int
     {
-        return (int)$this->getFileContent("$this->testRootDir/{$this->getPath()}.rc");
+        $file = "$this->testRootDir/{$this->getPath()}.rc";
+
+        // Create a file if not exists
+        if(!file_exists($file)) {
+            file_put_contents($file, 0);
+        }
+
+        return (int)$this->getFileContent($file);
     }
 
     /**

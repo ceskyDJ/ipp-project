@@ -1,5 +1,8 @@
 # IDE files
 .idea/
 
+# Temporary files
+tmp/
+
 # Output files
 xsmahe01.tgz
