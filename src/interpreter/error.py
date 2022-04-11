@@ -57,3 +57,8 @@ class MissingRequiredInputArgException(Exception):
 class InvalidFileArgException(Exception):
     """Exception for invalid (non-existing, etc.) file entered as input argument"""
     pass
+
+
+class UsingUndefinedLabelException(Exception):
+    """Exception for trying to use undefined label in jump/call instructions"""
+    pass
