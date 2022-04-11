@@ -8,6 +8,11 @@ class Interpreter:
     pass
 
 
+class Loader:
+    """Instruction loader and input verifier"""
+    pass
+
+
 class Executor:
     """Instruction executor"""
     pass
