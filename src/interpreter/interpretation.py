@@ -1,7 +1,7 @@
 # This is a part of IPP project
 #
 # Author: Michal Šmahel (xsmahe01)
-# Date: 2021
+# Date: 2022
 
 class Interpreter:
     """Controller of the interpretation process"""
