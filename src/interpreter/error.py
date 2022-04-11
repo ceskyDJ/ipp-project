@@ -62,3 +62,23 @@ class InvalidFileArgException(Exception):
 class UsingUndefinedLabelException(Exception):
     """Exception for trying to use undefined label in jump/call instructions"""
     pass
+
+
+class PopEmptyStackException(Exception):
+    """Exception for trying to pop from an empty stack"""
+    pass
+
+
+class PopEmptyLocalMemoryException(Exception):
+    """Exception for trying to pop from an empty local memory (with no memory frame in)"""
+    pass
+
+
+class GetValueFromNotInitVarException(Exception):
+    """Exception for trying to get a value from an uninitialized variable (it has no value yet)"""
+    pass
+
+
+class NonExistingVarException(Exception):
+    """Exception for trying to use non-existing variable"""
+    pass
