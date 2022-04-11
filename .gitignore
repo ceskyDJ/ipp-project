@@ -3,6 +3,7 @@
 
 # Temporary files
 tmp/
+__pycache__/
 
 # Output files
 xsmahe01.tgz
