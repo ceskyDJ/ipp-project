@@ -5,7 +5,7 @@
 
 from xml.etree.ElementTree import ElementTree
 
-from interpreter.interpretation import Loader
+from interpreter.interpretation import Loader, Interpreter
 from interpreter.error import ExitCode, InvalidInputArgException, TooManyInputArgsException, \
     MissingRequiredInputArgException, InvalidFileArgException, BadInstructionOrderException, BadXmlStructureException
 from interpreter.cli import CliArgParser
@@ -28,12 +28,20 @@ def main() -> int:
     # Needed objects
     element_tree = ElementTree()
     loader = Loader(element_tree, cli_arg_parser.source)
+    interpreter = Interpreter(cli_arg_parser.input)
+
+    # Load program
+    try:
+        program = loader.load_program()
+    except (BadInstructionOrderException, BadXmlStructureException):
+        return ExitCode.BAD_XML_STRUCTURE
 
     # Interpretation
     try:
-        program = loader.load_program()
-    except (BadInstructionOrderException, BadXmlStructureException) as e:
-        return ExitCode.BAD_XML_STRUCTURE
+        interpreter.run(program)
+    except Exception:
+        # TODO: add all exceptions and returns
+        return 1
 
     return ExitCode.SUCCESS
 
