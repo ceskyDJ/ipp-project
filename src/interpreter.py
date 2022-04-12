@@ -2,21 +2,41 @@
 #
 # Author: Michal Šmahel (xsmahe01)
 # Date: 2022
+
+from xml.etree.ElementTree import ElementTree
+
+from interpreter.interpretation import Loader
 from interpreter.error import ExitCode, InvalidInputArgException, TooManyInputArgsException, \
-    MissingRequiredInputArgException, InvalidFileArgException
+    MissingRequiredInputArgException, InvalidFileArgException, BadInstructionOrderException, BadXmlStructureException
 from interpreter.cli import CliArgParser
 
 
-def main():
-    """Main function controlling the running of the script"""
+def main() -> int:
+    """
+    Main function controlling the running of the script
+
+    :return: Script's exit code
+    """
     # Process CLI input arguments
     try:
         cli_arg_parser = CliArgParser()
     except (InvalidInputArgException, TooManyInputArgsException, MissingRequiredInputArgException):
-        exit(ExitCode.WRONG_INPUT_ARGS)
+        return ExitCode.WRONG_INPUT_ARGS
     except InvalidFileArgException:
-        exit(ExitCode.INPUT_FILE_ERROR)
+        return ExitCode.INPUT_FILE_ERROR
+
+    # Needed objects
+    element_tree = ElementTree()
+    loader = Loader(element_tree, cli_arg_parser.source)
+
+    # Interpretation
+    try:
+        program = loader.load_program()
+    except (BadInstructionOrderException, BadXmlStructureException) as e:
+        return ExitCode.BAD_XML_STRUCTURE
+
+    return ExitCode.SUCCESS
 
 
 if __name__ == '__main__':
-    main()
+    exit(main())

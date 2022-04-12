@@ -4,9 +4,9 @@
 # Date: 2022
 
 from enum import Enum
-from typing import List, Dict
+from typing import Dict
 
-from interpreter.error import UsingUndefinedLabelException
+from interpreter.error import UsingUndefinedLabelException, MissingInstructionArgException
 
 
 class Program:
@@ -68,7 +68,7 @@ class Program:
 class Instruction:
     """Entity class representation of single program instruction"""
 
-    def __init__(self, op_code: 'OpCode', args: List['Argument'] = None):
+    def __init__(self, op_code: 'OpCode', args: Dict[int, 'Argument'] = None):
         """
         Class constructor
 
@@ -76,7 +76,7 @@ class Instruction:
         :param args: Arguments for instruction
         """
         if args is None:
-            args = []
+            args = {}
 
         self.__op_code = op_code
         self.__args = args
@@ -91,13 +91,26 @@ class Instruction:
         return self.__op_code
 
     @property
-    def args(self) -> List['Argument']:
+    def args(self) -> Dict[int, 'Argument']:
         """
         Getter for arguments
 
         :return: Arguments of the instruction
         """
         return self.__args
+
+    def get_arg(self, number: int) -> 'Argument':
+        """
+        Returns argument with specified number
+
+        :param number: Number of needed argument
+        :return: Needed argument
+        :raise MissingInstructionArgException: Needed argument is missing
+        """
+        if number not in self.__args:
+            raise MissingInstructionArgException("Needed argument is missing")
+
+        return self.__args[number]
 
 
 class Argument:

@@ -82,3 +82,23 @@ class GetValueFromNotInitVarException(Exception):
 class NonExistingVarException(Exception):
     """Exception for trying to use non-existing variable"""
     pass
+
+
+class BadInstructionOrderException(Exception):
+    """Exception for duplicate or negative instruction order"""
+    pass
+
+
+class MissingInstructionArgException(Exception):
+    """Exception for missing instruction argument"""
+    pass
+
+
+class BadXmlStructureException(Exception):
+    """Exception for errors in XML program representation structure (elements in a wrong place, etc.)"""
+    pass
+
+
+class XmlParsingErrorException(Exception):
+    """Exception for XML parsing error due to well-formed XML"""
+    pass
