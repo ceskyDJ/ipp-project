@@ -13,6 +13,7 @@ namespace Test\Testing;
 use Test\Entity\TestCase;
 use Test\Entity\TestReport;
 use Test\Enum\TestStatus;
+use Test\Exceptions\InvalidInputFileException;
 use Test\Tools\DiffProgram;
 
 /**
@@ -120,6 +121,7 @@ abstract class Tester
      * @param int $exitCode Exit code returned by tested script
      *
      * @return TestStatus Final status of the test (success/failed + details)
+     * @throws InvalidInputFileException Not readable file
      */
     protected function verifyTestResult(TestCase $testCase, int $exitCode): TestStatus
     {
@@ -161,6 +163,7 @@ abstract class Tester
      * @param TestCase[] $testSuite Test suite (array of test cases to run)
      *
      * @return TestReport Generated test report
+     * @throws InvalidInputFileException Not readable file
      */
     public abstract function test(array $testSuite): TestReport;
 }

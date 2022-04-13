@@ -10,6 +10,8 @@ declare(strict_types=1);
 
 namespace Test\Entity;
 
+use Test\Exceptions\InvalidInputFileException;
+
 /**
  * Representation of test case (guide how to run a test)
  */
@@ -71,12 +73,17 @@ class TestCase
      * @param string $file File name
      *
      * @return string Content of the file
+     * @throws InvalidInputFileException Not readable file
      */
     private function getFileContent(string $file): string
     {
         // Create a file if not exists
         if(!file_exists($file)) {
             touch($file);
+        }
+
+        if (!is_readable($file)) {
+            throw new InvalidInputFileException("File $file can't be read");
         }
 
         return file_get_contents($file);
@@ -142,6 +149,7 @@ class TestCase
      * Getter for source code to test
      *
      * @return string Source code to give on the input of the tested script
+     * @throws InvalidInputFileException Not readable file
      */
     public function getSourceCode(): string
     {
@@ -162,6 +170,7 @@ class TestCase
      * Getter for test input
      *
      * @return string Input to give to the tested script
+     * @throws InvalidInputFileException Not readable file
      */
     public function getInput(): string
     {
@@ -172,6 +181,7 @@ class TestCase
      * Getter for test reference exit code
      *
      * @return int Reference exit code
+     * @throws InvalidInputFileException Not readable file
      */
     public function getReferenceExitCode(): int
     {
@@ -199,6 +209,7 @@ class TestCase
      * Getter for test reference output
      * 
      * @return string Reference output for the tested script
+     * @throws InvalidInputFileException Not readable file
      */
     public function getReferenceOutput(): string
     {

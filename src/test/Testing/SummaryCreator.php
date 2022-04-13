@@ -11,6 +11,7 @@ declare(strict_types=1);
 namespace Test\Testing;
 
 use Test\Entity\TestReport;
+use Test\Exceptions\InvalidInputFileException;
 
 /**
  * Creator of the summary HTML output
@@ -25,6 +26,7 @@ class SummaryCreator
      *
      * @return string HTML summary
      * @noinspection PhpUnusedParameterInspection Parameters are used in the template file
+     * @throws InvalidInputFileException Not readable file (propagated from template)
      */
     public function create(TestReport $testReport): string
     {

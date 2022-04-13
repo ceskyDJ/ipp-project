@@ -14,6 +14,7 @@ use Test\Exceptions\BadNumberOfInputArgsException;
 use Test\Exceptions\InternalErrorException;
 use Test\Exceptions\InvalidDirOrFileArgException;
 use Test\Exceptions\InvalidInputArgValueException;
+use Test\Exceptions\InvalidInputFileException;
 use Test\Testing\SummaryCreator;
 use Test\Testing\TesterFactory;
 use Test\Tools\DiffProgramFactory;
@@ -54,7 +55,11 @@ $summaryCreator = new SummaryCreator;
 // Start processing
 $testSuite = $tester->createTestSuite();
 
-$testReport = $tester->test($testSuite);
-$testReport->setEnd();
+try {
+    $testReport = $tester->test($testSuite);
+    $testReport->setEnd();
 
-echo $summaryCreator->create($testReport);
+    echo $summaryCreator->create($testReport);
+} catch (InvalidInputFileException $e) {
+    exit(ExitCode::INPUT_FILE_ERROR->value);
+}

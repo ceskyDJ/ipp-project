@@ -13,6 +13,7 @@ namespace Test\Testing;
 use Test\Entity\TakenTest;
 use Test\Entity\TestCase;
 use Test\Entity\TestReport;
+use Test\Exceptions\InvalidInputFileException;
 use Test\Tools\DiffProgram;
 
 /**
@@ -48,6 +49,7 @@ class InterpreterTester extends Tester
      * @param TestCase[] $testSuite Test suite (array of test cases to run)
      *
      * @return TestReport Generated test report
+     * @throws InvalidInputFileException Not readable file
      */
     public function test(array $testSuite): TestReport
     {

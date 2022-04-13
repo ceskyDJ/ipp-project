@@ -11,6 +11,7 @@ declare(strict_types=1);
 namespace Test\Entity;
 
 use Test\Enum\TestStatus;
+use Test\Exceptions\InvalidInputFileException;
 
 /**
  * Representation of taken (run) test
@@ -79,6 +80,7 @@ class TakenTest
      * Getter for test reference exit code
      *
      * @return int Reference exit code
+     * @throws InvalidInputFileException Not readable file
      */
     public function getReferenceExitCode(): int
     {
@@ -89,6 +91,7 @@ class TakenTest
      * Getter for test reference output
      *
      * @return string Reference output of the test
+     * @throws InvalidInputFileException Not readable file
      */
     public function getReferenceOutput(): string
     {
