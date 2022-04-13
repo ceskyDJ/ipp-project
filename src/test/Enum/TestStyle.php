@@ -21,11 +21,11 @@ enum TestStyle
      */
     case PARSE;
     /**
-     * Test only interpreter script (interpreter.py)
+     * Test only interpreter script (interpret.py)
      */
     case INTERPRETER;
     /**
-     * Test both scripts (parse.php and interpreter.py)
+     * Test both scripts (parse.php and interpret.py)
      */
     case BOTH;
 }

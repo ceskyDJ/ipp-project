@@ -17,7 +17,7 @@ use Test\Exceptions\InvalidInputFileException;
 use Test\Tools\DiffProgram;
 
 /**
- * Concrete tester for testing script interpreter.py
+ * Concrete tester for testing script interpret.py
  */
 class InterpreterTester extends Tester
 {

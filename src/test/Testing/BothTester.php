@@ -17,7 +17,7 @@ use Test\Exceptions\InvalidInputFileException;
 use Test\Tools\DiffProgram;
 
 /**
- * Concrete tester for testing both scripts - parse.php and interpreter.py
+ * Concrete tester for testing both scripts - parse.php and interpret.py
  */
 class BothTester extends Tester
 {
@@ -68,7 +68,7 @@ class BothTester extends Tester
             // XML representation is given to the stdin of interpreter, user input is given by --input argument
             // output is redirected to the final file
             $intPart = "python3.8 $this->intScript --input $inFile > $outFile";
-            // parse.php and interpreter.py parts are composited into final Shell pipeline
+            // parse.php and interpret.py parts are composited into final Shell pipeline
             // tee is used for backing up the XML representation created by parse.php
             exec("$parsePart | tee $tmpFile | $intPart", $output, $exitCode);
 

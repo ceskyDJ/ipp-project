@@ -167,7 +167,7 @@ class CliArgParser
     {
         $this->parsedArgs['directory'] = $this->parsedArgs['directory'] ?? getcwd();
         $this->parsedArgs['parse-script'] = $this->parsedArgs['parse-script'] ?? 'parse.php';
-        $this->parsedArgs['int-script'] = $this->parsedArgs['int-script'] ?? 'interpreter.py';
+        $this->parsedArgs['int-script'] = $this->parsedArgs['int-script'] ?? 'interpret.py';
         $this->parsedArgs['jexampath'] = $this->parsedArgs['jexampath'] ?? '/pub/courses/ipp/jexamxml';
     }
 
@@ -221,7 +221,7 @@ class CliArgParser
         $wrongArgsExitCode = ExitCode::WRONG_INPUT_ARGS->value;
 
         echo <<<EOF
-        test.php je skript pro automaticke testovani skriptu parse.php a interpreter.py. Jsou vyuzivany
+        test.php je skript pro automaticke testovani skriptu parse.php a interpret.py. Jsou vyuzivany
         predpripravene testy, ktere jsou pouze automaticky spousteny. Jedna se o soucast 2. casti projektu
         do predmetu IPP na FIT VUT.
         
@@ -242,9 +242,9 @@ class CliArgParser
                                     v aktualnim adresari.
           --int-script=file         Cesta k souboru skriptu pro interpretaci XML reprezentace kodu vytvorene
                                     v prvni fazi skriptem parse.php. V pripade neuvedeni tohoto argumentu se
-                                    pouzije soubor interpreter.py z aktualniho adresare.
+                                    pouzije soubor interpret.py z aktualniho adresare.
           --parse-only              Bude testovan pouze skript parse.php (analyzator jazyka IPPcode22).
-          --int-only                Bude testovan pouze skript interpreter.py (interpret XML reprezentace jazyka).
+          --int-only                Bude testovan pouze skript interpret.py (interpret XML reprezentace jazyka).
           --jexampath=path          Cesta k adresari obsahujicimu soubory jexamxml.jar s JAR balickem obsahujicim
                                     nastroj A7Soft JExamXML a options s konfiguraci pro tento nastroj. Pokud neni
                                     tento argument specifikovan, je pouzit adresar /pub/courses/ipp/jexamxml/.
@@ -290,7 +290,7 @@ class CliArgParser
     /**
      * Getter for int-script input argument
      *
-     * @return string Path to the interpreter script (interpreter.py)
+     * @return string Path to the interpreter script (interpret.py)
      */
     public function getIntScript(): string
     {

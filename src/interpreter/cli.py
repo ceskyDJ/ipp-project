@@ -30,7 +30,7 @@ class CliArgParser(ArgumentParser):
         super().__init__(
             formatter_class=CzechHelpFormatter,
             description=textwrap.dedent("""\
-                interpreter.py je skript slouzici pro interpretaci XML reprezentace
+                interpret.py je skript slouzici pro interpretaci XML reprezentace
                 kodu vytvorene skriptem parse.php ze zdrojoveho kodu v jazyce
                 IPPcode22. Jedna se o soucast 2. casti projektu do predmetu IPP
                 na FIT VUT.
