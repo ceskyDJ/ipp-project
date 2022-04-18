@@ -6,12 +6,14 @@
 import re
 import sys
 from sys import stdin
-from typing import Optional, Dict, NoReturn
+from typing import Optional, Dict, NoReturn, List, Tuple, Union
 from xml.etree.ElementTree import ElementTree, ParseError
 
-from interpreter.error import BadInstructionOrderException, BadXmlStructureException, XmlParsingErrorException
+from interpreter.error import BadInstructionOrderException, BadXmlStructureException, XmlParsingErrorException, \
+    MissingInstructionArgException, InvalidDataTypeException, UsingUndefinedMemoryFrameException, \
+    TooFewInstructionArgsException
 from interpreter.code import Program, Instruction, OpCode, Argument, ArgType, EndOfProgram
-from interpreter.memory import MemoryFrame, LocalMemory, CallStack, DataStack
+from interpreter.memory import Variable, ProcessMemory, CallStack, DataStack
 
 
 class Interpreter:
@@ -27,9 +29,7 @@ class Interpreter:
         self.__input_file = input_file
 
         self.__program_counter = 0
-        self.__global_memory_frame = MemoryFrame()
-        self.__local_memory_stack = LocalMemory()
-        self.__temporary_memory_frame: Optional[MemoryFrame] = None
+        self.__memory = ProcessMemory()
         self.__call_stack = CallStack()
         self.__data_stack = DataStack()
 
@@ -38,6 +38,12 @@ class Interpreter:
         Runs interpretation
 
         :param program: Object representation of the program for interpretation
+        :raise InvalidDataTypeException: Invalid data type
+        :raise MissingInstructionArgException: Missing argument
+        :raise NonExistingVarException: Variable doesn't exist
+        :raise GetValueFromNotInitVarException: Variable isn't initialized
+        :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
+        :raise TooFewInstructionArgsException: Too many arguments
         """
         self.__program = program
 
@@ -74,6 +80,12 @@ class Interpreter:
         Executes an instruction
 
         :param instruction: Instruction to execute
+        :raise InvalidDataTypeException: Invalid data type
+        :raise MissingInstructionArgException: Missing argument
+        :raise NonExistingVarException: Variable doesn't exist
+        :raise GetValueFromNotInitVarException: Variable isn't initialized
+        :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
+        :raise TooFewInstructionArgsException: Too many arguments
         """
         if instruction.op_code == OpCode.MOVE:
             self.__move(instruction.args)
@@ -149,11 +161,72 @@ class Interpreter:
         # Increment program counter
         self.__program_counter += 1
 
+    def __check_data_types(self, pattern: List[Union[ArgType, Tuple[ArgType]]], args: Dict[int, Argument]) -> None:
+        """
+        Checks data types of instruction operands
+
+        :param pattern: Pattern to check by
+        :param args: Arguments to test
+        :raise InvalidDataTypeException: Invalid data type
+        :raise MissingInstructionArgException: Missing argument
+        :raise NonExistingVarException: Variable doesn't exist
+        :raise GetValueFromNotInitVarException: Variable isn't initialized
+        :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
+        :raise TooFewInstructionArgsException: Too many arguments
+        """
+        if len(args) > len(pattern):
+            raise TooFewInstructionArgsException(f"Instruction wants {len(pattern)} args but got {len(args)}")
+
+        for arg_number, ref_types in enumerate(pattern):
+            if arg_number not in args:
+                raise MissingInstructionArgException("Some instruction argument is missing")
+
+            # If only one reference type in available, convert it to one-item tuple
+            if type(ref_types) != tuple:
+                ref_types = (ref_types, )
+
+            for ref_type_number, ref_type in enumerate(ref_types):
+                try:
+                    arg_type = args[arg_number].arg_type
+                    if arg_type != ArgType.VAR and ref_type != ArgType.VAR:
+                        # Value <-> Value
+                        # Types can be tested directly
+                        if arg_type != ref_type:
+                            raise InvalidDataTypeException("Invalid data type of instruction operand")
+                    elif arg_type == ArgType.VAR and ref_type != ArgType.VAR:
+                        # Var <-> Value
+                        # Types must be tested indirectly from variable's value
+                        variable = self.__memory.get_variable(args[arg_number].value)
+                        var_value = variable.value
+                        if ArgType(var_value.val_type) != ref_type:
+                            raise InvalidDataTypeException("Invalid data type of variable passed in instruction operand")
+                    elif arg_type != ArgType.VAR and ref_type == ArgType.VAR:
+                        # Value <-> Var
+                        # Variable is needed (writing must be supported) but the operand is a value
+                        raise InvalidDataTypeException("Variable is needed, value has been set as operand")
+                    else:
+                        # Var <-> Var
+                        # It will be always OK (Var is elementary type here - we need some variable, we got it)
+                        pass
+
+                    # Type of argument fits some reference type
+                    break
+                except Exception as e:
+                    # If it was the last possible reference type --> it cant fit
+                    if (ref_type_number + 1) == len(ref_types):
+                        raise e
+
     def __move(self, args: Dict[int, Argument]) -> None:
         """
         Copies value into variable
 
         :param args: Instruction arguments
+        :raise InvalidDataTypeException: Invalid data type
+        :raise MissingInstructionArgException: Missing argument
+        :raise NonExistingVarException: Variable doesn't exist
+        :raise GetValueFromNotInitVarException: Variable isn't initialized
+        :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
+        :raise TooFewInstructionArgsException: Too many arguments
         """
         pass
 
@@ -162,6 +235,12 @@ class Interpreter:
         Creates a temporary memory frame
 
         :param args: Instruction arguments
+        :raise InvalidDataTypeException: Invalid data type
+        :raise MissingInstructionArgException: Missing argument
+        :raise NonExistingVarException: Variable doesn't exist
+        :raise GetValueFromNotInitVarException: Variable isn't initialized
+        :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
+        :raise TooFewInstructionArgsException: Too many arguments
         """
         pass
 
@@ -170,6 +249,12 @@ class Interpreter:
         Pushes temporary memory frame to the local memory frame stack
 
         :param args: Instruction arguments
+        :raise InvalidDataTypeException: Invalid data type
+        :raise MissingInstructionArgException: Missing argument
+        :raise NonExistingVarException: Variable doesn't exist
+        :raise GetValueFromNotInitVarException: Variable isn't initialized
+        :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
+        :raise TooFewInstructionArgsException: Too many arguments
         """
         pass
 
@@ -178,6 +263,12 @@ class Interpreter:
         Moves memory frame on the top of the local memory frame stack to temporary frame
 
         :param args: Instruction arguments
+        :raise InvalidDataTypeException: Invalid data type
+        :raise MissingInstructionArgException: Missing argument
+        :raise NonExistingVarException: Variable doesn't exist
+        :raise GetValueFromNotInitVarException: Variable isn't initialized
+        :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
+        :raise TooFewInstructionArgsException: Too many arguments
         """
         pass
 
@@ -186,6 +277,12 @@ class Interpreter:
         Defines a new variable (not initialized)
 
         :param args: Instruction arguments
+        :raise InvalidDataTypeException: Invalid data type
+        :raise MissingInstructionArgException: Missing argument
+        :raise NonExistingVarException: Variable doesn't exist
+        :raise GetValueFromNotInitVarException: Variable isn't initialized
+        :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
+        :raise TooFewInstructionArgsException: Too many arguments
         """
         pass
 
@@ -194,6 +291,12 @@ class Interpreter:
         Calls a function
 
         :param args: Instruction arguments
+        :raise InvalidDataTypeException: Invalid data type
+        :raise MissingInstructionArgException: Missing argument
+        :raise NonExistingVarException: Variable doesn't exist
+        :raise GetValueFromNotInitVarException: Variable isn't initialized
+        :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
+        :raise TooFewInstructionArgsException: Too many arguments
         """
         pass
 
@@ -202,6 +305,12 @@ class Interpreter:
         Returns from a function to the place where it was called from + 1 instruction
 
         :param args: Instruction arguments
+        :raise InvalidDataTypeException: Invalid data type
+        :raise MissingInstructionArgException: Missing argument
+        :raise NonExistingVarException: Variable doesn't exist
+        :raise GetValueFromNotInitVarException: Variable isn't initialized
+        :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
+        :raise TooFewInstructionArgsException: Too many arguments
         """
         pass
 
@@ -210,6 +319,12 @@ class Interpreter:
         Pushes a value to the data stack
 
         :param args: Instruction arguments
+        :raise InvalidDataTypeException: Invalid data type
+        :raise MissingInstructionArgException: Missing argument
+        :raise NonExistingVarException: Variable doesn't exist
+        :raise GetValueFromNotInitVarException: Variable isn't initialized
+        :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
+        :raise TooFewInstructionArgsException: Too many arguments
         """
         pass
 
@@ -218,6 +333,12 @@ class Interpreter:
         Returns and removes value from the top of the data stack
 
         :param args: Instruction arguments
+        :raise InvalidDataTypeException: Invalid data type
+        :raise MissingInstructionArgException: Missing argument
+        :raise NonExistingVarException: Variable doesn't exist
+        :raise GetValueFromNotInitVarException: Variable isn't initialized
+        :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
+        :raise TooFewInstructionArgsException: Too many arguments
         """
         pass
 
@@ -226,6 +347,12 @@ class Interpreter:
         Counts addition
 
         :param args: Instruction arguments
+        :raise InvalidDataTypeException: Invalid data type
+        :raise MissingInstructionArgException: Missing argument
+        :raise NonExistingVarException: Variable doesn't exist
+        :raise GetValueFromNotInitVarException: Variable isn't initialized
+        :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
+        :raise TooFewInstructionArgsException: Too many arguments
         """
         pass
 
@@ -234,6 +361,12 @@ class Interpreter:
         Counts subtraction
 
         :param args: Instruction arguments
+        :raise InvalidDataTypeException: Invalid data type
+        :raise MissingInstructionArgException: Missing argument
+        :raise NonExistingVarException: Variable doesn't exist
+        :raise GetValueFromNotInitVarException: Variable isn't initialized
+        :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
+        :raise TooFewInstructionArgsException: Too many arguments
         """
         pass
 
@@ -242,6 +375,12 @@ class Interpreter:
         Counts multiplication
 
         :param args: Instruction arguments
+        :raise InvalidDataTypeException: Invalid data type
+        :raise MissingInstructionArgException: Missing argument
+        :raise NonExistingVarException: Variable doesn't exist
+        :raise GetValueFromNotInitVarException: Variable isn't initialized
+        :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
+        :raise TooFewInstructionArgsException: Too many arguments
         """
         pass
 
@@ -250,6 +389,12 @@ class Interpreter:
         Counts integer division
 
         :param args: Instruction arguments
+        :raise InvalidDataTypeException: Invalid data type
+        :raise MissingInstructionArgException: Missing argument
+        :raise NonExistingVarException: Variable doesn't exist
+        :raise GetValueFromNotInitVarException: Variable isn't initialized
+        :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
+        :raise TooFewInstructionArgsException: Too many arguments
         """
         pass
 
@@ -258,6 +403,12 @@ class Interpreter:
         Compares if the left value is less than right value
 
         :param args: Instruction arguments
+        :raise InvalidDataTypeException: Invalid data type
+        :raise MissingInstructionArgException: Missing argument
+        :raise NonExistingVarException: Variable doesn't exist
+        :raise GetValueFromNotInitVarException: Variable isn't initialized
+        :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
+        :raise TooFewInstructionArgsException: Too many arguments
         """
         pass
 
@@ -266,6 +417,12 @@ class Interpreter:
         Compares if the left value is greater than right value
 
         :param args: Instruction arguments
+        :raise InvalidDataTypeException: Invalid data type
+        :raise MissingInstructionArgException: Missing argument
+        :raise NonExistingVarException: Variable doesn't exist
+        :raise GetValueFromNotInitVarException: Variable isn't initialized
+        :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
+        :raise TooFewInstructionArgsException: Too many arguments
         """
         pass
 
@@ -274,6 +431,12 @@ class Interpreter:
         Compares if the left and the right values are equal
 
         :param args: Instruction arguments
+        :raise InvalidDataTypeException: Invalid data type
+        :raise MissingInstructionArgException: Missing argument
+        :raise NonExistingVarException: Variable doesn't exist
+        :raise GetValueFromNotInitVarException: Variable isn't initialized
+        :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
+        :raise TooFewInstructionArgsException: Too many arguments
         """
         pass
 
@@ -282,6 +445,12 @@ class Interpreter:
         Does logical AND
 
         :param args: Instruction arguments
+        :raise InvalidDataTypeException: Invalid data type
+        :raise MissingInstructionArgException: Missing argument
+        :raise NonExistingVarException: Variable doesn't exist
+        :raise GetValueFromNotInitVarException: Variable isn't initialized
+        :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
+        :raise TooFewInstructionArgsException: Too many arguments
         """
         pass
 
@@ -290,6 +459,12 @@ class Interpreter:
         Does logical OR
 
         :param args: Instruction arguments
+        :raise InvalidDataTypeException: Invalid data type
+        :raise MissingInstructionArgException: Missing argument
+        :raise NonExistingVarException: Variable doesn't exist
+        :raise GetValueFromNotInitVarException: Variable isn't initialized
+        :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
+        :raise TooFewInstructionArgsException: Too many arguments
         """
         pass
 
@@ -298,6 +473,12 @@ class Interpreter:
         Does logical NOT
 
         :param args: Instruction arguments
+        :raise InvalidDataTypeException: Invalid data type
+        :raise MissingInstructionArgException: Missing argument
+        :raise NonExistingVarException: Variable doesn't exist
+        :raise GetValueFromNotInitVarException: Variable isn't initialized
+        :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
+        :raise TooFewInstructionArgsException: Too many arguments
         """
         pass
 
@@ -306,6 +487,12 @@ class Interpreter:
         Converts ASCII integer value to character
 
         :param args: Instruction arguments
+        :raise InvalidDataTypeException: Invalid data type
+        :raise MissingInstructionArgException: Missing argument
+        :raise NonExistingVarException: Variable doesn't exist
+        :raise GetValueFromNotInitVarException: Variable isn't initialized
+        :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
+        :raise TooFewInstructionArgsException: Too many arguments
         """
         pass
 
@@ -314,6 +501,12 @@ class Interpreter:
         Converts some character from a string to its ASCII integer value
 
         :param args: Instruction arguments
+        :raise InvalidDataTypeException: Invalid data type
+        :raise MissingInstructionArgException: Missing argument
+        :raise NonExistingVarException: Variable doesn't exist
+        :raise GetValueFromNotInitVarException: Variable isn't initialized
+        :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
+        :raise TooFewInstructionArgsException: Too many arguments
         """
         pass
 
@@ -322,6 +515,12 @@ class Interpreter:
         Reads value from standard input
 
         :param args: Instruction arguments
+        :raise InvalidDataTypeException: Invalid data type
+        :raise MissingInstructionArgException: Missing argument
+        :raise NonExistingVarException: Variable doesn't exist
+        :raise GetValueFromNotInitVarException: Variable isn't initialized
+        :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
+        :raise TooFewInstructionArgsException: Too many arguments
         """
         pass
 
@@ -330,6 +529,12 @@ class Interpreter:
         Writes value to the standatd output
 
         :param args: Instruction arguments
+        :raise InvalidDataTypeException: Invalid data type
+        :raise MissingInstructionArgException: Missing argument
+        :raise NonExistingVarException: Variable doesn't exist
+        :raise GetValueFromNotInitVarException: Variable isn't initialized
+        :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
+        :raise TooFewInstructionArgsException: Too many arguments
         """
         pass
 
@@ -338,6 +543,12 @@ class Interpreter:
         Concatenates two strings
 
         :param args: Instruction arguments
+        :raise InvalidDataTypeException: Invalid data type
+        :raise MissingInstructionArgException: Missing argument
+        :raise NonExistingVarException: Variable doesn't exist
+        :raise GetValueFromNotInitVarException: Variable isn't initialized
+        :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
+        :raise TooFewInstructionArgsException: Too many arguments
         """
         pass
 
@@ -346,6 +557,12 @@ class Interpreter:
         Counts length of a string
 
         :param args: Instruction arguments
+        :raise InvalidDataTypeException: Invalid data type
+        :raise MissingInstructionArgException: Missing argument
+        :raise NonExistingVarException: Variable doesn't exist
+        :raise GetValueFromNotInitVarException: Variable isn't initialized
+        :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
+        :raise TooFewInstructionArgsException: Too many arguments
         """
         pass
 
@@ -354,6 +571,12 @@ class Interpreter:
         Returns a character at some position of a string
 
         :param args: Instruction arguments
+        :raise InvalidDataTypeException: Invalid data type
+        :raise MissingInstructionArgException: Missing argument
+        :raise NonExistingVarException: Variable doesn't exist
+        :raise GetValueFromNotInitVarException: Variable isn't initialized
+        :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
+        :raise TooFewInstructionArgsException: Too many arguments
         """
         pass
 
@@ -362,6 +585,12 @@ class Interpreter:
         Modifies character at some position of a string
 
         :param args: Instruction arguments
+        :raise InvalidDataTypeException: Invalid data type
+        :raise MissingInstructionArgException: Missing argument
+        :raise NonExistingVarException: Variable doesn't exist
+        :raise GetValueFromNotInitVarException: Variable isn't initialized
+        :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
+        :raise TooFewInstructionArgsException: Too many arguments
         """
         pass
 
@@ -370,6 +599,12 @@ class Interpreter:
         Gets a type of the value
 
         :param args: Instruction arguments
+        :raise InvalidDataTypeException: Invalid data type
+        :raise MissingInstructionArgException: Missing argument
+        :raise NonExistingVarException: Variable doesn't exist
+        :raise GetValueFromNotInitVarException: Variable isn't initialized
+        :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
+        :raise TooFewInstructionArgsException: Too many arguments
         """
         pass
 
@@ -378,6 +613,12 @@ class Interpreter:
         Add a label for jump/call instructions
 
         :param args: Instruction arguments
+        :raise InvalidDataTypeException: Invalid data type
+        :raise MissingInstructionArgException: Missing argument
+        :raise NonExistingVarException: Variable doesn't exist
+        :raise GetValueFromNotInitVarException: Variable isn't initialized
+        :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
+        :raise TooFewInstructionArgsException: Too many arguments
         """
         pass
 
@@ -386,6 +627,12 @@ class Interpreter:
         Jumps to a label (unconditionally)
 
         :param args: Instruction arguments
+        :raise InvalidDataTypeException: Invalid data type
+        :raise MissingInstructionArgException: Missing argument
+        :raise NonExistingVarException: Variable doesn't exist
+        :raise GetValueFromNotInitVarException: Variable isn't initialized
+        :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
+        :raise TooFewInstructionArgsException: Too many arguments
         """
         pass
 
@@ -394,6 +641,12 @@ class Interpreter:
         Conditionally jumps to a label if values are equal
 
         :param args: Instruction arguments
+        :raise InvalidDataTypeException: Invalid data type
+        :raise MissingInstructionArgException: Missing argument
+        :raise NonExistingVarException: Variable doesn't exist
+        :raise GetValueFromNotInitVarException: Variable isn't initialized
+        :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
+        :raise TooFewInstructionArgsException: Too many arguments
         """
         pass
 
@@ -402,6 +655,12 @@ class Interpreter:
         Conditionally jumps to a label if values are NOT equal
 
         :param args: Instruction arguments
+        :raise InvalidDataTypeException: Invalid data type
+        :raise MissingInstructionArgException: Missing argument
+        :raise NonExistingVarException: Variable doesn't exist
+        :raise GetValueFromNotInitVarException: Variable isn't initialized
+        :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
+        :raise TooFewInstructionArgsException: Too many arguments
         """
         pass
 
@@ -410,6 +669,12 @@ class Interpreter:
         Stops interpretation with an exit code
 
         :param args: Instruction arguments
+        :raise InvalidDataTypeException: Invalid data type
+        :raise MissingInstructionArgException: Missing argument
+        :raise NonExistingVarException: Variable doesn't exist
+        :raise GetValueFromNotInitVarException: Variable isn't initialized
+        :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
+        :raise TooFewInstructionArgsException: Too many arguments
         """
         pass
 
@@ -418,6 +683,12 @@ class Interpreter:
         Writes a value to the standard error output
 
         :param args: Instruction arguments
+        :raise InvalidDataTypeException: Invalid data type
+        :raise MissingInstructionArgException: Missing argument
+        :raise NonExistingVarException: Variable doesn't exist
+        :raise GetValueFromNotInitVarException: Variable isn't initialized
+        :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
+        :raise TooFewInstructionArgsException: Too many arguments
         """
         pass
 
@@ -426,6 +697,12 @@ class Interpreter:
         Writes information about interpretation to the standard error output
 
         :param args: Instruction arguments
+        :raise InvalidDataTypeException: Invalid data type
+        :raise MissingInstructionArgException: Missing argument
+        :raise NonExistingVarException: Variable doesn't exist
+        :raise GetValueFromNotInitVarException: Variable isn't initialized
+        :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
+        :raise TooFewInstructionArgsException: Too many arguments
         """
         pass
 
@@ -471,7 +748,7 @@ class Loader:
             raise BadXmlStructureException("Program element must have required attribute language with value IPPcode22")
 
         # Prepare regular expression for extracting arguments' numbers
-        extract_arg_pos_regex = re.compile("arg([0-9]+)")
+        extract_arg_pos_regex = re.compile("arg(\\d+)")
 
         instructions: Dict[int, Instruction] = {}
         for xml_instruction in parsed_xml:
@@ -483,14 +760,17 @@ class Loader:
                 raise BadXmlStructureException("Instruction element must have required attribute order")
             order = int(xml_instruction.attrib['order'])
 
+            if order < 0:
+                raise BadInstructionOrderException("Instruction order must be positive number or zero")
+
+            if order in instructions:
+                # There mustn't be two instructions with the same order
+                raise BadInstructionOrderException("Duplicate instruction order")
+
             # Instruction operation code
             if 'opcode' not in xml_instruction.attrib:
                 raise BadXmlStructureException("Instruction element must have required attribute opcode")
             op_code = OpCode(xml_instruction.attrib['opcode'].upper())
-
-            # There mustn't be two instructions with the same order
-            if order in instructions:
-                raise BadInstructionOrderException("Duplicate instruction order")
 
             # Instruction arguments
             args: Dict[int, Argument] = {}
@@ -501,14 +781,20 @@ class Loader:
                     raise BadXmlStructureException("There could be only argX elements in the instruction element")
                 arg_num = int(arg_num_match.group(1)) - 1  # -1 => convert to numbering system that starts with 0
 
+                if arg_num in args:
+                    # Argument number must be unique within one instruction
+                    raise BadXmlStructureException("Duplicate argument number")
+
                 # Argument type
                 if 'type' not in xml_attribute.attrib:
                     raise BadXmlStructureException("Attribute element must have required attribute type")
                 arg_type_raw = xml_attribute.attrib['type']
                 arg_type = ArgType(arg_type_raw.lower())
 
+                # Argument value
                 if xml_attribute.text is None:
                     raise BadXmlStructureException("Attribute element must contain a value")
+
                 args[arg_num] = Argument(arg_type, str(xml_attribute.text))
 
             instructions[order] = Instruction(op_code, args)

@@ -3,11 +3,111 @@
 # Author: Michal Šmahel (xsmahe01)
 # Date: 2022
 
+import re
 from enum import Enum
 from typing import Union, Optional, Dict, List
 
-from interpreter.error import PopEmptyStackException, PopEmptyLocalMemoryException, GetValueFromNotInitVarException, \
-    NonExistingVarException
+from interpreter.error import PopEmptyStackException, EmptyLocalMemoryException, GetValueFromNotInitVarException, \
+    NonExistingVarException, UsingUndefinedMemoryFrameException, VariableRedefinitionException
+
+
+class ProcessMemory:
+    """Abstraction of process random access memory (facade for 3 memory types)"""
+
+    def __init__(self):
+        """Class constructor"""
+        # Initialize all components of process memory
+        # Random access memory
+        self.__global_memory_frame = MemoryFrame()
+        self.__local_memory_stack = LocalMemory()
+        self.__temporary_memory_frame: Optional[MemoryFrame] = None
+
+    def __get_memory_frame(self, memory_frame_name: str) -> 'MemoryFrame':
+        """
+        Returns correct memory frame by its name
+
+        :param memory_frame_name: Name of the memory frame (TF, LF, GF)
+        :return: Corresponding memory frame
+        :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
+        :raise EmptyLocalMemoryException: Trying to access empty local memory frame stack
+        """
+        if memory_frame_name == "TF":
+            if self.__temporary_memory_frame is None:
+                raise UsingUndefinedMemoryFrameException("Using undefined memory frame")
+
+            return self.__temporary_memory_frame
+        elif memory_frame_name == "LF":
+
+            return self.__local_memory_stack.top()
+        elif memory_frame_name == "GF":
+            return self.__global_memory_frame
+
+    def get_variable(self, full_var_name: str) -> 'Variable':
+        """
+        Finds variable in memory
+
+        :param full_var_name: Name of the variable (with memory frame prefix - TF@, LF@, GF@)
+        :return: Found variable
+        :raise NonExistingVarException: Variable doesn't exist
+        :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
+        :raise EmptyLocalMemoryException: Empty local memory stack
+        """
+        regex_match = re.search("^(TF|LF|GF)@(.+)$", full_var_name)
+        memory_frame_name = regex_match.group(1)
+        variable_name = regex_match.group(2)
+
+        memory_frame = self.__get_memory_frame(memory_frame_name)
+
+        return memory_frame.get_variable(variable_name)
+
+    def define_variable(self, full_var_name: str) -> 'Variable':
+        """
+        Defines new variable in memory
+
+        :param full_var_name: Name of the variable (with memory frame prefix - TF@, LF@, GF@)
+        :return: Newly defined variable
+        :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
+        :raise EmptyLocalMemoryException: Empty local memory stack
+        :raise VariableRedefinitionException: Already defined variable
+        """
+        regex_match = re.search("^(TF|LF|GF)@(.+)$", full_var_name)
+        memory_frame_name = regex_match.group(1)
+        variable_name = regex_match.group(2)
+
+        variable = Variable(variable_name)
+
+        memory_frame = self.__get_memory_frame(memory_frame_name)
+
+        try:
+            memory_frame.get_variable(variable.name)
+
+            # Variable has been defined yet
+            raise VariableRedefinitionException("Defining variable that has been defined yet")
+        except NonExistingVarException:
+            # Variable isn't in the memory --> it can be added
+            memory_frame.add_variable(variable)
+
+        return variable
+
+    def push_frame(self) -> None:
+        """
+        Push temporary memory frame to the top of local memory frame stack
+
+        :raise UsingUndefinedMemoryFrameException: Temporary memory frame is undefined
+        """
+        if self.__temporary_memory_frame is None:
+            raise UsingUndefinedMemoryFrameException("Using undefined memory frame")
+
+        self.__local_memory_stack.push(self.__temporary_memory_frame)
+        self.__temporary_memory_frame = None
+
+    def pop_frame(self) -> None:
+        """
+        Pop the most-local memory frame from local memory stack to the temporary memory frame
+
+        :raise EmptyLocalMemoryException: Popping memory frame from empty local memory frame stack
+        """
+        self.__temporary_memory_frame = self.__local_memory_stack.pop()
 
 
 class LocalMemory:
@@ -30,30 +130,24 @@ class LocalMemory:
         Returns and removes memory frame from the top of the stack
 
         :return: The memory frame on the top of the stack
-        :raise PopEmptyLocalMemoryException: Popping memory frame from empty local memory frame stack
+        :raise EmptyLocalMemoryException: Popping memory frame from empty local memory frame stack
         """
-        if len(self.__data) < 0:
-            raise PopEmptyLocalMemoryException("There is no memory frame in the local memory stack. Pop is unavailable")
+        if len(self.__data) == 0:
+            raise EmptyLocalMemoryException("There is no memory frame in the local memory stack. Pop is unavailable")
 
         return self.__data.pop()
 
-    def add_variable(self, variable: 'Variable') -> None:
+    def top(self) -> 'MemoryFrame':
         """
-        Adds a variable to the memory frame on the top (works something like proxy)
+        Returns memory frame on the top of the stack
 
-        :param variable: Variable to add
+        :return: The most local memory frame
+        :raise EmptyLocalMemoryException: Trying to access empty local memory frame stack
         """
-        self.__data[-1].add_variable(variable)
+        if len(self.__data) == 0:
+            raise EmptyLocalMemoryException("There is no memory frame in the local memory stack. Cannot add var")
 
-    def get_variable(self, name: str) -> 'Variable':
-        """
-        Returns variable stored in memory frame on top (works something like proxy)
-
-        :param name: Name of the variable
-        :return: Found variable
-        :raise NonExistingVarException: Non-existing variable
-        """
-        return self.__data[-1].get_variable(name)
+        return self.__data[-1]
 
 
 class MemoryFrame:
@@ -153,7 +247,7 @@ class DataStack:
         :return: Value from the top of the stack
         :raise PopEmptyStackException: Popping from an empty data stack
         """
-        if len(self.__data) < 0:
+        if len(self.__data) == 0:
             raise PopEmptyStackException("Pop from an empty stack isn't possible")
 
         return self.__data.pop()
@@ -182,7 +276,7 @@ class CallStack:
         :return: The memory position from the top
         :raise PopEmptyStackException: Popping from an empty call stack
         """
-        if len(self.__data) < 0:
+        if len(self.__data) == 0:
             raise PopEmptyStackException("Pop from a call stack isn't possible now. It's empty")
 
         return self.__data.pop()

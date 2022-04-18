@@ -69,8 +69,8 @@ class PopEmptyStackException(Exception):
     pass
 
 
-class PopEmptyLocalMemoryException(Exception):
-    """Exception for trying to pop from an empty local memory (with no memory frame in)"""
+class EmptyLocalMemoryException(Exception):
+    """Exception for trying to access an empty local memory (with no memory frame in)"""
     pass
 
 
@@ -101,4 +101,24 @@ class BadXmlStructureException(Exception):
 
 class XmlParsingErrorException(Exception):
     """Exception for XML parsing error due to well-formed XML"""
+    pass
+
+
+class InvalidDataTypeException(Exception):
+    """Exception for invalid data type of operand of the instruction"""
+    pass
+
+
+class UsingUndefinedMemoryFrameException(Exception):
+    """Exception for using undefined memory frame"""
+    pass
+
+
+class VariableRedefinitionException(Exception):
+    """Exception for defining variable with name that has already defined variable"""
+    pass
+
+
+class TooFewInstructionArgsException(Exception):
+    """Exception for too many input arguments (more than instruction wants)"""
     pass
