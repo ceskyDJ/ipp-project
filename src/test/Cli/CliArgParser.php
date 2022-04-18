@@ -51,12 +51,13 @@ class CliArgParser
         $this->argv = $argv;
 
         $this->parseCliArgs();
-        $this->setDefaults();
-        $this->checkDirectoriesAndFiles();
 
         if(key_exists("help", $this->parsedArgs)) {
             $this->writeHelp();
         }
+
+        $this->setDefaults();
+        $this->checkDirectoriesAndFiles();
     }
 
     /**
