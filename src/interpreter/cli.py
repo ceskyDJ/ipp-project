@@ -44,13 +44,14 @@ class CliArgParser(ArgumentParser):
 
         self.__setup_input_arguments()
         self.__parse_input_arguments()
-        self.__check_input_arguments()
 
         # Show help if --help switch is active
         if self.__parsed_args.help:
             self.print_help()
 
             exit(ExitCode.SUCCESS)
+
+        self.__check_input_arguments()
 
     def __setup_input_arguments(self) -> None:
         """Sets up needed input arguments"""
