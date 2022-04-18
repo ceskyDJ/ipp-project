@@ -11,9 +11,9 @@ from xml.etree.ElementTree import ElementTree, ParseError
 
 from interpreter.error import BadInstructionOrderException, BadXmlStructureException, XmlParsingErrorException, \
     MissingInstructionArgException, InvalidDataTypeException, TooFewInstructionArgsException, ZeroDivisionException, \
-    ExitValueOutOfRangeException
+    ExitValueOutOfRangeException, InvalidAsciiPositionException, IndexingOutsideStringException
 from interpreter.code import Program, Instruction, OpCode, Argument, ArgType, EndOfProgram
-from interpreter.memory import ProcessMemory, CallStack, DataStack
+from interpreter.memory import ProcessMemory, CallStack, DataStack, DataType, Value
 
 
 class Interpreter:
@@ -43,9 +43,15 @@ class Interpreter:
         :raise NonExistingVarException: Variable doesn't exist
         :raise GetValueFromNotInitVarException: Variable isn't initialized
         :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
+        :raise EmptyLocalMemoryException: Empty local memory stack
         :raise TooFewInstructionArgsException: Too many arguments
         :raise ZeroDivisionException: Zero division
         :raise ExitValueOutOfRangeException: Exit code out of range
+        :raise UsingUndefinedLabelException: Label is undefined in the program
+        :raise PopEmptyStackException: Popping from an empty call stack
+        :raise InvalidAsciiPositionException: Converting non-ASCII position to char
+        :raise IndexingOutsideStringException: Indexing outside string
+        :raise VariableRedefinitionException: Already defined variable
         """
         self.__program = program
 
@@ -87,9 +93,15 @@ class Interpreter:
         :raise NonExistingVarException: Variable doesn't exist
         :raise GetValueFromNotInitVarException: Variable isn't initialized
         :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
+        :raise EmptyLocalMemoryException: Empty local memory stack
         :raise TooFewInstructionArgsException: Too many arguments
         :raise ZeroDivisionException: Zero division
         :raise ExitValueOutOfRangeException: Exit code out of range
+        :raise UsingUndefinedLabelException: Label is undefined in the program
+        :raise PopEmptyStackException: Popping from an empty call stack
+        :raise InvalidAsciiPositionException: Converting non-ASCII position to char
+        :raise IndexingOutsideStringException: Indexing outside string
+        :raise VariableRedefinitionException: Already defined variable
         """
         if instruction.op_code == OpCode.MOVE:
             self.__move(instruction.args)
@@ -176,6 +188,7 @@ class Interpreter:
         :raise NonExistingVarException: Variable doesn't exist
         :raise GetValueFromNotInitVarException: Variable isn't initialized
         :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
+        :raise EmptyLocalMemoryException: Empty local memory stack
         :raise TooFewInstructionArgsException: Too many arguments
         """
         if len(args) > len(pattern):
@@ -224,7 +237,7 @@ class Interpreter:
                     if (ref_type_number + 1) == len(ref_types):
                         raise e
 
-    def __get_value_from_arg(self, argument: Argument) -> Union[int, str, bool, None]:
+    def __get_value_from_arg(self, argument: Argument) -> Tuple[DataType, Union[int, str, bool, None]]:
         """
         Extracts value from instruction argument
 
@@ -232,19 +245,19 @@ class Interpreter:
         :return: Extracted value (truly typed)
         """
         if argument.arg_type == ArgType.INT:
-            return int(argument.value)
+            return DataType.INT, int(argument.value)
         elif argument.arg_type == ArgType.BOOL:
-            return argument.value.lower() == "true"
+            return DataType.BOOL, bool(argument.value.lower() == "true")
         elif argument.arg_type == ArgType.STRING:
-            return argument.value
+            return DataType.STRING, str(argument.value)
         elif argument.arg_type == ArgType.NIL:
-            return None
+            return DataType.NIL, None
         else:
             # Variable in argument --> need to be read from memory
             variable = self.__memory.get_variable(argument.value)
             value = variable.value
 
-            return value.content
+            return value.val_type, value.content
 
     def __move(self, args: Dict[int, Argument]) -> None:
         """
@@ -256,9 +269,16 @@ class Interpreter:
         :raise NonExistingVarException: Variable doesn't exist
         :raise GetValueFromNotInitVarException: Variable isn't initialized
         :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
+        :raise EmptyLocalMemoryException: Empty local memory stack
         :raise TooFewInstructionArgsException: Too many arguments
         """
         self.__check_data_types([ArgType.VAR, (ArgType.INT, ArgType.BOOL, ArgType.STRING, ArgType.NIL)], args)
+
+        variable = self.__memory.get_variable(args[0].value)
+        data_type, raw_value = self.__get_value_from_arg(args[1])
+
+        var_value = Value(data_type, raw_value)
+        variable.value = var_value
 
     def __create_frame(self, args: Dict[int, Argument]) -> None:
         """
@@ -270,9 +290,12 @@ class Interpreter:
         :raise NonExistingVarException: Variable doesn't exist
         :raise GetValueFromNotInitVarException: Variable isn't initialized
         :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
+        :raise EmptyLocalMemoryException: Empty local memory stack
         :raise TooFewInstructionArgsException: Too many arguments
         """
         self.__check_data_types([], args)
+
+        self.__memory.create_frame()
 
     def __push_frame(self, args: Dict[int, Argument]) -> None:
         """
@@ -284,9 +307,12 @@ class Interpreter:
         :raise NonExistingVarException: Variable doesn't exist
         :raise GetValueFromNotInitVarException: Variable isn't initialized
         :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
+        :raise EmptyLocalMemoryException: Empty local memory stack
         :raise TooFewInstructionArgsException: Too many arguments
         """
         self.__check_data_types([], args)
+
+        self.__memory.push_frame()
 
     def __pop_frame(self, args: Dict[int, Argument]) -> None:
         """
@@ -298,9 +324,12 @@ class Interpreter:
         :raise NonExistingVarException: Variable doesn't exist
         :raise GetValueFromNotInitVarException: Variable isn't initialized
         :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
+        :raise EmptyLocalMemoryException: Empty local memory stack
         :raise TooFewInstructionArgsException: Too many arguments
         """
         self.__check_data_types([], args)
+
+        self.__memory.pop_frame()
 
     def __defvar(self, args: Dict[int, Argument]) -> None:
         """
@@ -312,9 +341,13 @@ class Interpreter:
         :raise NonExistingVarException: Variable doesn't exist
         :raise GetValueFromNotInitVarException: Variable isn't initialized
         :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
+        :raise EmptyLocalMemoryException: Empty local memory stack
         :raise TooFewInstructionArgsException: Too many arguments
+        :raise VariableRedefinitionException: Already defined variable
         """
         self.__check_data_types([ArgType.VAR], args)
+
+        self.__memory.define_variable(args[0].value)
 
     def __call(self, args: Dict[int, Argument]) -> None:
         """
@@ -326,9 +359,18 @@ class Interpreter:
         :raise NonExistingVarException: Variable doesn't exist
         :raise GetValueFromNotInitVarException: Variable isn't initialized
         :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
+        :raise EmptyLocalMemoryException: Empty local memory stack
         :raise TooFewInstructionArgsException: Too many arguments
+        :raise UsingUndefinedLabelException: Label is undefined in the program
         """
         self.__check_data_types([ArgType.LABEL], args)
+
+        # Add current position + 1 to call stack
+        self.__call_stack.push(self.__program_counter + 1)
+
+        # Jump to instruction after label
+        label_position = self.__program.get_jump_target(args[0].value)
+        self.__program_counter = label_position + 1
 
     def __return(self, args: Dict[int, Argument]) -> None:
         """
@@ -340,9 +382,17 @@ class Interpreter:
         :raise NonExistingVarException: Variable doesn't exist
         :raise GetValueFromNotInitVarException: Variable isn't initialized
         :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
+        :raise EmptyLocalMemoryException: Empty local memory stack
         :raise TooFewInstructionArgsException: Too many arguments
+        :raise PopEmptyStackException: Popping from an empty call stack
         """
         self.__check_data_types([], args)
+
+        # Get position from call stack
+        new_position = self.__call_stack.pop()
+
+        # Jump to recovered position
+        self.__program_counter = new_position
 
     def __pushs(self, args: Dict[int, Argument]) -> None:
         """
@@ -354,9 +404,15 @@ class Interpreter:
         :raise NonExistingVarException: Variable doesn't exist
         :raise GetValueFromNotInitVarException: Variable isn't initialized
         :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
+        :raise EmptyLocalMemoryException: Empty local memory stack
         :raise TooFewInstructionArgsException: Too many arguments
         """
         self.__check_data_types([(ArgType.VAR, ArgType.INT, ArgType.BOOL, ArgType.STRING, ArgType.NIL)], args)
+
+        data_type, raw_value = self.__get_value_from_arg(args[0])
+
+        obj_value = Value(data_type, raw_value)
+        self.__data_stack.push(obj_value)
 
     def __pops(self, args: Dict[int, Argument]) -> None:
         """
@@ -368,9 +424,16 @@ class Interpreter:
         :raise NonExistingVarException: Variable doesn't exist
         :raise GetValueFromNotInitVarException: Variable isn't initialized
         :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
+        :raise EmptyLocalMemoryException: Empty local memory stack
         :raise TooFewInstructionArgsException: Too many arguments
+        :raise PopEmptyStackException: Popping from an empty data stack
         """
         self.__check_data_types([ArgType.VAR], args)
+
+        variable = self.__memory.get_variable(args[0].value)
+
+        value = self.__data_stack.pop()
+        variable.value = value
 
     def __add(self, args: Dict[int, Argument]) -> None:
         """
@@ -382,9 +445,17 @@ class Interpreter:
         :raise NonExistingVarException: Variable doesn't exist
         :raise GetValueFromNotInitVarException: Variable isn't initialized
         :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
+        :raise EmptyLocalMemoryException: Empty local memory stack
         :raise TooFewInstructionArgsException: Too many arguments
         """
         self.__check_data_types([ArgType.VAR, ArgType.INT, ArgType.INT], args)
+
+        _, first = self.__get_value_from_arg(args[1])
+        _, second = self.__get_value_from_arg(args[2])
+        variable = self.__memory.get_variable(args[0].value)
+
+        result = Value(DataType.INT, first + second)
+        variable.value = result
 
     def __sub(self, args: Dict[int, Argument]) -> None:
         """
@@ -396,9 +467,17 @@ class Interpreter:
         :raise NonExistingVarException: Variable doesn't exist
         :raise GetValueFromNotInitVarException: Variable isn't initialized
         :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
+        :raise EmptyLocalMemoryException: Empty local memory stack
         :raise TooFewInstructionArgsException: Too many arguments
         """
         self.__check_data_types([ArgType.VAR, ArgType.INT, ArgType.INT], args)
+
+        _, first = self.__get_value_from_arg(args[1])
+        _, second = self.__get_value_from_arg(args[2])
+        variable = self.__memory.get_variable(args[0].value)
+
+        result = Value(DataType.INT, first - second)
+        variable.value = result
 
     def __mul(self, args: Dict[int, Argument]) -> None:
         """
@@ -410,9 +489,17 @@ class Interpreter:
         :raise NonExistingVarException: Variable doesn't exist
         :raise GetValueFromNotInitVarException: Variable isn't initialized
         :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
+        :raise EmptyLocalMemoryException: Empty local memory stack
         :raise TooFewInstructionArgsException: Too many arguments
         """
         self.__check_data_types([ArgType.VAR, ArgType.INT, ArgType.INT], args)
+
+        _, first = self.__get_value_from_arg(args[1])
+        _, second = self.__get_value_from_arg(args[2])
+        variable = self.__memory.get_variable(args[0].value)
+
+        result = Value(DataType.INT, first * second)
+        variable.value = result
 
     def __idiv(self, args: Dict[int, Argument]) -> None:
         """
@@ -424,16 +511,21 @@ class Interpreter:
         :raise NonExistingVarException: Variable doesn't exist
         :raise GetValueFromNotInitVarException: Variable isn't initialized
         :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
+        :raise EmptyLocalMemoryException: Empty local memory stack
         :raise TooFewInstructionArgsException: Too many arguments
         :raise ZeroDivisionException: Zero division
         """
         self.__check_data_types([ArgType.VAR, ArgType.INT, ArgType.INT], args)
 
-        first = self.__get_value_from_arg(args[1])
-        second = self.__get_value_from_arg(args[2])
+        _, first = self.__get_value_from_arg(args[1])
+        _, second = self.__get_value_from_arg(args[2])
+        variable = self.__memory.get_variable(args[0].value)
 
         if second == 0:
             raise ZeroDivisionException("Division with zero constant is forbidden")
+
+        result = Value(DataType.INT, first // second)
+        variable.value = result
 
     def __lt(self, args: Dict[int, Argument]) -> None:
         """
@@ -445,6 +537,7 @@ class Interpreter:
         :raise NonExistingVarException: Variable doesn't exist
         :raise GetValueFromNotInitVarException: Variable isn't initialized
         :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
+        :raise EmptyLocalMemoryException: Empty local memory stack
         :raise TooFewInstructionArgsException: Too many arguments
         """
         self.__check_data_types([ArgType.VAR, (ArgType.INT, ArgType.BOOL, ArgType.STRING),
@@ -452,6 +545,13 @@ class Interpreter:
 
         if args[1].arg_type != args[2].arg_type:
             raise InvalidDataTypeException("Both operand must be of the same type")
+
+        _, first = self.__get_value_from_arg(args[1])
+        _, second = self.__get_value_from_arg(args[2])
+        variable = self.__memory.get_variable(args[0].value)
+
+        result = Value(DataType.BOOL, first < second)
+        variable.value = result
 
     def __gt(self, args: Dict[int, Argument]) -> None:
         """
@@ -463,6 +563,7 @@ class Interpreter:
         :raise NonExistingVarException: Variable doesn't exist
         :raise GetValueFromNotInitVarException: Variable isn't initialized
         :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
+        :raise EmptyLocalMemoryException: Empty local memory stack
         :raise TooFewInstructionArgsException: Too many arguments
         """
         self.__check_data_types([ArgType.VAR, (ArgType.INT, ArgType.BOOL, ArgType.STRING),
@@ -470,6 +571,13 @@ class Interpreter:
 
         if args[1].arg_type != args[2].arg_type:
             raise InvalidDataTypeException("Both operand must be of the same type")
+
+        _, first = self.__get_value_from_arg(args[1])
+        _, second = self.__get_value_from_arg(args[2])
+        variable = self.__memory.get_variable(args[0].value)
+
+        result = Value(DataType.BOOL, first > second)
+        variable.value = result
 
     def __eq(self, args: Dict[int, Argument]) -> None:
         """
@@ -481,6 +589,7 @@ class Interpreter:
         :raise NonExistingVarException: Variable doesn't exist
         :raise GetValueFromNotInitVarException: Variable isn't initialized
         :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
+        :raise EmptyLocalMemoryException: Empty local memory stack
         :raise TooFewInstructionArgsException: Too many arguments
         """
         self.__check_data_types([ArgType.VAR, (ArgType.INT, ArgType.BOOL, ArgType.STRING, ArgType.NIL),
@@ -488,6 +597,13 @@ class Interpreter:
 
         if args[1].arg_type != args[2].arg_type and args[1].arg_type != ArgType.NIL and args[2].arg_type != ArgType.NIL:
             raise InvalidDataTypeException("Both operand must be of the same type or one of them could be of type nil")
+
+        _, first = self.__get_value_from_arg(args[1])
+        _, second = self.__get_value_from_arg(args[2])
+        variable = self.__memory.get_variable(args[0].value)
+
+        result = Value(DataType.BOOL, first == second)
+        variable.value = result
 
     def __and(self, args: Dict[int, Argument]) -> None:
         """
@@ -499,9 +615,17 @@ class Interpreter:
         :raise NonExistingVarException: Variable doesn't exist
         :raise GetValueFromNotInitVarException: Variable isn't initialized
         :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
+        :raise EmptyLocalMemoryException: Empty local memory stack
         :raise TooFewInstructionArgsException: Too many arguments
         """
         self.__check_data_types([ArgType.VAR, ArgType.BOOL, ArgType.BOOL], args)
+
+        _, first = self.__get_value_from_arg(args[1])
+        _, second = self.__get_value_from_arg(args[2])
+        variable = self.__memory.get_variable(args[0].value)
+
+        result = Value(DataType.BOOL, first and second)
+        variable.value = result
 
     def __or(self, args: Dict[int, Argument]) -> None:
         """
@@ -513,9 +637,17 @@ class Interpreter:
         :raise NonExistingVarException: Variable doesn't exist
         :raise GetValueFromNotInitVarException: Variable isn't initialized
         :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
+        :raise EmptyLocalMemoryException: Empty local memory stack
         :raise TooFewInstructionArgsException: Too many arguments
         """
         self.__check_data_types([ArgType.VAR, ArgType.BOOL, ArgType.BOOL], args)
+
+        _, first = self.__get_value_from_arg(args[1])
+        _, second = self.__get_value_from_arg(args[2])
+        variable = self.__memory.get_variable(args[0].value)
+
+        result = Value(DataType.BOOL, first or second)
+        variable.value = result
 
     def __not(self, args: Dict[int, Argument]) -> None:
         """
@@ -527,9 +659,16 @@ class Interpreter:
         :raise NonExistingVarException: Variable doesn't exist
         :raise GetValueFromNotInitVarException: Variable isn't initialized
         :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
+        :raise EmptyLocalMemoryException: Empty local memory stack
         :raise TooFewInstructionArgsException: Too many arguments
         """
         self.__check_data_types([ArgType.VAR, ArgType.BOOL], args)
+
+        _, value = self.__get_value_from_arg(args[1])
+        variable = self.__memory.get_variable(args[0].value)
+
+        result = Value(DataType.BOOL, not value)
+        variable.value = result
 
     def __int2char(self, args: Dict[int, Argument]) -> None:
         """
@@ -541,9 +680,20 @@ class Interpreter:
         :raise NonExistingVarException: Variable doesn't exist
         :raise GetValueFromNotInitVarException: Variable isn't initialized
         :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
+        :raise EmptyLocalMemoryException: Empty local memory stack
         :raise TooFewInstructionArgsException: Too many arguments
+        :raise InvalidAsciiPositionException: Converting non-ASCII position to char
         """
         self.__check_data_types([ArgType.VAR, ArgType.INT], args)
+
+        _, value = self.__get_value_from_arg(args[1])
+        variable = self.__memory.get_variable(args[0].value)
+
+        try:
+            result = Value(DataType.STRING, chr(value))
+            variable.value = result
+        except ValueError:
+            raise InvalidAsciiPositionException("Non-ASCII position cannot be converted to char with ASCII")
 
     def __stri2int(self, args: Dict[int, Argument]) -> None:
         """
@@ -555,9 +705,21 @@ class Interpreter:
         :raise NonExistingVarException: Variable doesn't exist
         :raise GetValueFromNotInitVarException: Variable isn't initialized
         :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
+        :raise EmptyLocalMemoryException: Empty local memory stack
         :raise TooFewInstructionArgsException: Too many arguments
+        :raise IndexingOutsideStringException: Indexing outside string
         """
         self.__check_data_types([ArgType.VAR, ArgType.STRING, ArgType.INT], args)
+
+        _, string = self.__get_value_from_arg(args[1])
+        _, position = self.__get_value_from_arg(args[2])
+        variable = self.__memory.get_variable(args[0].value)
+
+        if position > len(string):
+            raise IndexingOutsideStringException("Indexing outside the last char of the string")
+
+        result = Value(DataType.STRING, ord(string))
+        variable.value = result
 
     def __read(self, args: Dict[int, Argument]) -> None:
         """
@@ -569,9 +731,31 @@ class Interpreter:
         :raise NonExistingVarException: Variable doesn't exist
         :raise GetValueFromNotInitVarException: Variable isn't initialized
         :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
+        :raise EmptyLocalMemoryException: Empty local memory stack
         :raise TooFewInstructionArgsException: Too many arguments
         """
         self.__check_data_types([ArgType.VAR, ArgType.TYPE], args)
+
+        _, type_for_loading = self.__get_value_from_arg(args[1])
+        variable = self.__memory.get_variable(args[0].value)
+
+        try:
+            loaded_value = input()
+
+            if type_for_loading == "int":
+                raw_value = int(loaded_value)
+            elif type_for_loading == "bool":
+                raw_value = loaded_value.lower() == "true"
+            else:  # type_for_loading == "string"
+                raw_value = loaded_value
+
+            data_type = DataType(type_for_loading)
+        except EOFError:
+            data_type = DataType.NIL
+            raw_value = None
+
+        var_value = Value(data_type, raw_value)
+        variable.value = var_value
 
     def __write(self, args: Dict[int, Argument]) -> None:
         """
@@ -583,9 +767,19 @@ class Interpreter:
         :raise NonExistingVarException: Variable doesn't exist
         :raise GetValueFromNotInitVarException: Variable isn't initialized
         :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
+        :raise EmptyLocalMemoryException: Empty local memory stack
         :raise TooFewInstructionArgsException: Too many arguments
         """
         self.__check_data_types([(ArgType.VAR, ArgType.INT, ArgType.BOOL, ArgType.STRING, ArgType.NIL)], args)
+
+        data_type, value = self.__get_value_from_arg(args[0])
+
+        if data_type == DataType.BOOL:
+            print("true" if value else "false", end="")
+        elif data_type == DataType.NIL:
+            print("", end="")
+        else:
+            print(value, end="")
 
     def __concat(self, args: Dict[int, Argument]) -> None:
         """
@@ -597,9 +791,17 @@ class Interpreter:
         :raise NonExistingVarException: Variable doesn't exist
         :raise GetValueFromNotInitVarException: Variable isn't initialized
         :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
+        :raise EmptyLocalMemoryException: Empty local memory stack
         :raise TooFewInstructionArgsException: Too many arguments
         """
         self.__check_data_types([ArgType.VAR, ArgType.STRING, ArgType.STRING], args)
+
+        _, first = self.__get_value_from_arg(args[1])
+        _, second = self.__get_value_from_arg(args[2])
+        variable = self.__memory.get_variable(args[0].value)
+
+        result = Value(DataType.STRING, first + second)
+        variable.value = result
 
     def __strlen(self, args: Dict[int, Argument]) -> None:
         """
@@ -611,9 +813,16 @@ class Interpreter:
         :raise NonExistingVarException: Variable doesn't exist
         :raise GetValueFromNotInitVarException: Variable isn't initialized
         :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
+        :raise EmptyLocalMemoryException: Empty local memory stack
         :raise TooFewInstructionArgsException: Too many arguments
         """
         self.__check_data_types([ArgType.VAR, ArgType.STRING], args)
+
+        _, value = self.__get_value_from_arg(args[1])
+        variable = self.__memory.get_variable(args[0].value)
+
+        result = Value(DataType.INT, len(value))
+        variable.value = result
 
     def __get_char(self, args: Dict[int, Argument]) -> None:
         """
@@ -625,9 +834,21 @@ class Interpreter:
         :raise NonExistingVarException: Variable doesn't exist
         :raise GetValueFromNotInitVarException: Variable isn't initialized
         :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
+        :raise EmptyLocalMemoryException: Empty local memory stack
         :raise TooFewInstructionArgsException: Too many arguments
+        :raise IndexingOutsideStringException: Indexing outside string
         """
         self.__check_data_types([ArgType.VAR, ArgType.STRING, ArgType.INT], args)
+
+        _, string = self.__get_value_from_arg(args[1])
+        _, position = self.__get_value_from_arg(args[2])
+        variable = self.__memory.get_variable(args[0].value)
+
+        if position > len(string):
+            raise IndexingOutsideStringException("Indexing outside the last char of the string")
+
+        result = Value(DataType.STRING, string[position])
+        variable.value = result
 
     def __set_char(self, args: Dict[int, Argument]) -> None:
         """
@@ -639,9 +860,23 @@ class Interpreter:
         :raise NonExistingVarException: Variable doesn't exist
         :raise GetValueFromNotInitVarException: Variable isn't initialized
         :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
+        :raise EmptyLocalMemoryException: Empty local memory stack
         :raise TooFewInstructionArgsException: Too many arguments
         """
         self.__check_data_types([ArgType.VAR, ArgType.INT, ArgType.STRING], args)
+
+        _, position = self.__get_value_from_arg(args[1])
+        _, new_char = self.__get_value_from_arg(args[2])
+        variable = self.__memory.get_variable(args[0].value)
+
+        var_value = variable.value
+        value_content: str = var_value.content
+
+        if position > len(value_content):
+            raise IndexingOutsideStringException("Indexing outside the last char of the string")
+
+        result = Value(DataType.STRING, value_content[:position] + new_char + value_content[position + 1:])
+        variable.value = result
 
     def __type(self, args: Dict[int, Argument]) -> None:
         """
@@ -653,10 +888,17 @@ class Interpreter:
         :raise NonExistingVarException: Variable doesn't exist
         :raise GetValueFromNotInitVarException: Variable isn't initialized
         :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
+        :raise EmptyLocalMemoryException: Empty local memory stack
         :raise TooFewInstructionArgsException: Too many arguments
         """
         self.__check_data_types([ArgType.VAR, (ArgType.VAR, ArgType.INT, ArgType.BOOL, ArgType.STRING, ArgType.NIL)],
                                 args)
+
+        data_type, _ = self.__get_value_from_arg(args[1])
+        variable = self.__memory.get_variable(args[0].value)
+
+        value = Value(DataType.STRING, data_type.value)
+        variable.value = value
 
     def __label(self, args: Dict[int, Argument]) -> None:
         """
@@ -668,9 +910,13 @@ class Interpreter:
         :raise NonExistingVarException: Variable doesn't exist
         :raise GetValueFromNotInitVarException: Variable isn't initialized
         :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
+        :raise EmptyLocalMemoryException: Empty local memory stack
         :raise TooFewInstructionArgsException: Too many arguments
         """
         self.__check_data_types([ArgType.LABEL], args)
+
+        # This instruction does really nothing, it is for naming addresses
+        # This usage has been used by interpreter in loading phase yet
 
     def __jump(self, args: Dict[int, Argument]) -> None:
         """
@@ -682,9 +928,12 @@ class Interpreter:
         :raise NonExistingVarException: Variable doesn't exist
         :raise GetValueFromNotInitVarException: Variable isn't initialized
         :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
+        :raise EmptyLocalMemoryException: Empty local memory stack
         :raise TooFewInstructionArgsException: Too many arguments
         """
         self.__check_data_types([ArgType.LABEL], args)
+
+        self.__program_counter = self.__program.get_jump_target(args[0].value)
 
     def __jump_if_eq(self, args: Dict[int, Argument]) -> None:
         """
@@ -696,6 +945,7 @@ class Interpreter:
         :raise NonExistingVarException: Variable doesn't exist
         :raise GetValueFromNotInitVarException: Variable isn't initialized
         :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
+        :raise EmptyLocalMemoryException: Empty local memory stack
         :raise TooFewInstructionArgsException: Too many arguments
         """
         self.__check_data_types([ArgType.LABEL, (ArgType.INT, ArgType.BOOL, ArgType.STRING, ArgType.NIL),
@@ -703,6 +953,12 @@ class Interpreter:
 
         if args[1].arg_type != args[2].arg_type and args[1].arg_type != ArgType.NIL and args[2].arg_type != ArgType.NIL:
             raise InvalidDataTypeException("Both operand must be of the same type or one of them could be of type nil")
+
+        _, first = self.__get_value_from_arg(args[1])
+        _, second = self.__get_value_from_arg(args[2])
+
+        if first == second:
+            self.__program_counter = self.__program.get_jump_target(args[0].value)
 
     def __jump_if_neq(self, args: Dict[int, Argument]) -> None:
         """
@@ -714,6 +970,7 @@ class Interpreter:
         :raise NonExistingVarException: Variable doesn't exist
         :raise GetValueFromNotInitVarException: Variable isn't initialized
         :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
+        :raise EmptyLocalMemoryException: Empty local memory stack
         :raise TooFewInstructionArgsException: Too many arguments
         """
         self.__check_data_types([ArgType.LABEL, (ArgType.INT, ArgType.BOOL, ArgType.STRING, ArgType.NIL),
@@ -721,6 +978,12 @@ class Interpreter:
 
         if args[1].arg_type != args[2].arg_type and args[1].arg_type != ArgType.NIL and args[2].arg_type != ArgType.NIL:
             raise InvalidDataTypeException("Both operand must be of the same type or one of them could be of type nil")
+
+        _, first = self.__get_value_from_arg(args[1])
+        _, second = self.__get_value_from_arg(args[2])
+
+        if first != second:
+            self.__program_counter = self.__program.get_jump_target(args[0].value)
 
     def __exit(self, args: Dict[int, Argument]) -> NoReturn:
         """
@@ -732,15 +995,18 @@ class Interpreter:
         :raise NonExistingVarException: Variable doesn't exist
         :raise GetValueFromNotInitVarException: Variable isn't initialized
         :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
+        :raise EmptyLocalMemoryException: Empty local memory stack
         :raise TooFewInstructionArgsException: Too many arguments
         :raise ExitValueOutOfRangeException: Exit code out of range
         """
         self.__check_data_types([ArgType.INT], args)
 
-        value = self.__get_value_from_arg(args[0])
+        _, value = self.__get_value_from_arg(args[0])
 
         if value < 0 or value > 49:
             raise ExitValueOutOfRangeException(f"Exit value {value} is out of range <0, 49>")
+
+        exit(value)
 
     def __dprint(self, args: Dict[int, Argument]) -> None:
         """
@@ -752,9 +1018,23 @@ class Interpreter:
         :raise NonExistingVarException: Variable doesn't exist
         :raise GetValueFromNotInitVarException: Variable isn't initialized
         :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
+        :raise EmptyLocalMemoryException: Empty local memory stack
         :raise TooFewInstructionArgsException: Too many arguments
         """
         self.__check_data_types([(ArgType.VAR, ArgType.INT, ArgType.BOOL, ArgType.STRING, ArgType.NIL)], args)
+
+        data_type, value = self.__get_value_from_arg(args[0])
+
+        # For better readability...
+        if data_type == DataType.NIL:
+            value = "nil"
+        elif data_type == DataType.BOOL:
+            value = "true" if value else "false"
+
+        if args[0].arg_type == ArgType.VAR:
+            print(f"DPRINT: {args[0].value} = {data_type.value}@{value}", file=sys.stderr)
+        else:
+            print(f"DPRINT: {data_type.value}@{value}", file=sys.stderr)
 
     def __break(self, args: Dict[int, Argument]) -> None:
         """
@@ -766,9 +1046,12 @@ class Interpreter:
         :raise NonExistingVarException: Variable doesn't exist
         :raise GetValueFromNotInitVarException: Variable isn't initialized
         :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
+        :raise EmptyLocalMemoryException: Empty local memory stack
         :raise TooFewInstructionArgsException: Too many arguments
         """
         self.__check_data_types([], args)
+
+        # TODO: implement this optional instruction
 
 
 class Loader:

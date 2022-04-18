@@ -109,6 +109,10 @@ class ProcessMemory:
         """
         self.__temporary_memory_frame = self.__local_memory_stack.pop()
 
+    def create_frame(self) -> None:
+        """Creates a new temporary memory frame (replaces old if needed)"""
+        self.__temporary_memory_frame = MemoryFrame()
+
 
 class LocalMemory:
     """Stack of memory frames"""
@@ -211,7 +215,7 @@ class Variable:
         :raise GetValueFromNotInitVarException: Variable isn't initialized (has no value)
         """
         if self.__value is None:
-            raise GetValueFromNotInitVarException("The value is uninitialized. Its value can't be get, it has no value")
+            raise GetValueFromNotInitVarException("The variable is uninitialized. Its value can't be get")
 
         return self.__value
 

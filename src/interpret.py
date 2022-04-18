@@ -2,7 +2,6 @@
 #
 # Author: Michal Šmahel (xsmahe01)
 # Date: 2022
-import sys
 from xml.etree.ElementTree import ElementTree
 
 from interpreter.interpretation import Loader, Interpreter
@@ -10,7 +9,8 @@ from interpreter.error import ExitCode, InvalidInputArgException, TooManyInputAr
     MissingRequiredInputArgException, InvalidFileArgException, BadInstructionOrderException, BadXmlStructureException, \
     XmlParsingErrorException, InvalidDataTypeException, NonExistingVarException, GetValueFromNotInitVarException, \
     UsingUndefinedMemoryFrameException, MissingInstructionArgException, TooFewInstructionArgsException, \
-    ZeroDivisionException, ExitValueOutOfRangeException
+    ZeroDivisionException, ExitValueOutOfRangeException, EmptyLocalMemoryException, UsingUndefinedLabelException, \
+    PopEmptyStackException, InvalidAsciiPositionException, IndexingOutsideStringException, VariableRedefinitionException
 from interpreter.cli import CliArgParser
 
 
@@ -40,6 +40,9 @@ def main() -> int:
         return ExitCode.BAD_XML_STRUCTURE
     except XmlParsingErrorException:
         return ExitCode.NOT_WELL_FORMED_XML
+    except:
+        # For unexpected errors (primarily for debugging)
+        return ExitCode.INTERNAL_ERROR
 
     # Interpretation
     try:
@@ -52,16 +55,23 @@ def main() -> int:
         return ExitCode.NON_EXISTING_VARIABLE
     except GetValueFromNotInitVarException:
         return ExitCode.MISSING_VALUE
-    except UsingUndefinedMemoryFrameException:
+    except (UsingUndefinedMemoryFrameException, EmptyLocalMemoryException):
         return ExitCode.NON_EXISTING_FRAME
     except ZeroDivisionException:
         return ExitCode.BAD_OPERAND_VALUE
     except ExitValueOutOfRangeException:
         return ExitCode.BAD_OPERAND_VALUE
-    except Exception as e:
-        # TODO: add all exceptions and returns
-        print(e, file=sys.stderr)
-        return 1
+    except UsingUndefinedLabelException:
+        return ExitCode.SEMANTIC_ERROR
+    except PopEmptyStackException:
+        return ExitCode.MISSING_VALUE
+    except (InvalidAsciiPositionException, IndexingOutsideStringException):
+        return ExitCode.BAD_STRING_USAGE
+    except VariableRedefinitionException:
+        return ExitCode.SEMANTIC_ERROR
+    except:
+        # For unexpected errors (primarily for debugging)
+        return ExitCode.INTERNAL_ERROR
 
     return ExitCode.SUCCESS
 

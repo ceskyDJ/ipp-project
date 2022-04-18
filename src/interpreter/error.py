@@ -132,3 +132,13 @@ class ZeroDivisionException(Exception):
 class ExitValueOutOfRangeException(Exception):
     """Exception for invalid value in EXIT instruction that is outside <0, 49>"""
     pass
+
+
+class InvalidAsciiPositionException(Exception):
+    """Exception for trying to convert non-ASCII position to char with ASCII"""
+    pass
+
+
+class IndexingOutsideStringException(Exception):
+    """Exception for accessing position (char) outside the string"""
+    pass
