@@ -305,11 +305,11 @@ class Value:
         return self.__val_type
 
     @property
-    def value(self) -> Union[int, bool, str, None]:
+    def content(self) -> Union[int, bool, str, None]:
         """
-        Getter for value
+        Getter for content
 
-        :return: Value of type Value.val_type()
+        :return: Content of type Value.val_type()
         """
         return self.__value
 

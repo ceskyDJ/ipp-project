@@ -10,10 +10,10 @@ from typing import Optional, Dict, NoReturn, List, Tuple, Union
 from xml.etree.ElementTree import ElementTree, ParseError
 
 from interpreter.error import BadInstructionOrderException, BadXmlStructureException, XmlParsingErrorException, \
-    MissingInstructionArgException, InvalidDataTypeException, UsingUndefinedMemoryFrameException, \
-    TooFewInstructionArgsException
+    MissingInstructionArgException, InvalidDataTypeException, TooFewInstructionArgsException, ZeroDivisionException, \
+    ExitValueOutOfRangeException
 from interpreter.code import Program, Instruction, OpCode, Argument, ArgType, EndOfProgram
-from interpreter.memory import Variable, ProcessMemory, CallStack, DataStack
+from interpreter.memory import ProcessMemory, CallStack, DataStack
 
 
 class Interpreter:
@@ -44,6 +44,8 @@ class Interpreter:
         :raise GetValueFromNotInitVarException: Variable isn't initialized
         :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
         :raise TooFewInstructionArgsException: Too many arguments
+        :raise ZeroDivisionException: Zero division
+        :raise ExitValueOutOfRangeException: Exit code out of range
         """
         self.__program = program
 
@@ -86,6 +88,8 @@ class Interpreter:
         :raise GetValueFromNotInitVarException: Variable isn't initialized
         :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
         :raise TooFewInstructionArgsException: Too many arguments
+        :raise ZeroDivisionException: Zero division
+        :raise ExitValueOutOfRangeException: Exit code out of range
         """
         if instruction.op_code == OpCode.MOVE:
             self.__move(instruction.args)
@@ -161,7 +165,7 @@ class Interpreter:
         # Increment program counter
         self.__program_counter += 1
 
-    def __check_data_types(self, pattern: List[Union[ArgType, Tuple[ArgType]]], args: Dict[int, Argument]) -> None:
+    def __check_data_types(self, pattern: List[Union[ArgType, Tuple[ArgType, ...]]], args: Dict[int, Argument]) -> None:
         """
         Checks data types of instruction operands
 
@@ -195,11 +199,15 @@ class Interpreter:
                             raise InvalidDataTypeException("Invalid data type of instruction operand")
                     elif arg_type == ArgType.VAR and ref_type != ArgType.VAR:
                         # Var <-> Value
+                        # This is possible only for int, bool, string and nil types, otherwise it is an error
+                        if ref_type not in [ArgType.INT, ArgType.BOOL, ArgType.STRING, ArgType.NIL]:
+                            raise InvalidDataTypeException("Invalid data type of instruction operand")
+
                         # Types must be tested indirectly from variable's value
                         variable = self.__memory.get_variable(args[arg_number].value)
                         var_value = variable.value
                         if ArgType(var_value.val_type) != ref_type:
-                            raise InvalidDataTypeException("Invalid data type of variable passed in instruction operand")
+                            raise InvalidDataTypeException("Invalid data type of variable in instruction operand")
                     elif arg_type != ArgType.VAR and ref_type == ArgType.VAR:
                         # Value <-> Var
                         # Variable is needed (writing must be supported) but the operand is a value
@@ -216,6 +224,28 @@ class Interpreter:
                     if (ref_type_number + 1) == len(ref_types):
                         raise e
 
+    def __get_value_from_arg(self, argument: Argument) -> Union[int, str, bool, None]:
+        """
+        Extracts value from instruction argument
+
+        :param argument: Instruction argument
+        :return: Extracted value (truly typed)
+        """
+        if argument.arg_type == ArgType.INT:
+            return int(argument.value)
+        elif argument.arg_type == ArgType.BOOL:
+            return argument.value.lower() == "true"
+        elif argument.arg_type == ArgType.STRING:
+            return argument.value
+        elif argument.arg_type == ArgType.NIL:
+            return None
+        else:
+            # Variable in argument --> need to be read from memory
+            variable = self.__memory.get_variable(argument.value)
+            value = variable.value
+
+            return value.content
+
     def __move(self, args: Dict[int, Argument]) -> None:
         """
         Copies value into variable
@@ -228,7 +258,7 @@ class Interpreter:
         :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
         :raise TooFewInstructionArgsException: Too many arguments
         """
-        pass
+        self.__check_data_types([ArgType.VAR, (ArgType.INT, ArgType.BOOL, ArgType.STRING, ArgType.NIL)], args)
 
     def __create_frame(self, args: Dict[int, Argument]) -> None:
         """
@@ -242,7 +272,7 @@ class Interpreter:
         :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
         :raise TooFewInstructionArgsException: Too many arguments
         """
-        pass
+        self.__check_data_types([], args)
 
     def __push_frame(self, args: Dict[int, Argument]) -> None:
         """
@@ -256,7 +286,7 @@ class Interpreter:
         :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
         :raise TooFewInstructionArgsException: Too many arguments
         """
-        pass
+        self.__check_data_types([], args)
 
     def __pop_frame(self, args: Dict[int, Argument]) -> None:
         """
@@ -270,7 +300,7 @@ class Interpreter:
         :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
         :raise TooFewInstructionArgsException: Too many arguments
         """
-        pass
+        self.__check_data_types([], args)
 
     def __defvar(self, args: Dict[int, Argument]) -> None:
         """
@@ -284,7 +314,7 @@ class Interpreter:
         :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
         :raise TooFewInstructionArgsException: Too many arguments
         """
-        pass
+        self.__check_data_types([ArgType.VAR], args)
 
     def __call(self, args: Dict[int, Argument]) -> None:
         """
@@ -298,7 +328,7 @@ class Interpreter:
         :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
         :raise TooFewInstructionArgsException: Too many arguments
         """
-        pass
+        self.__check_data_types([ArgType.LABEL], args)
 
     def __return(self, args: Dict[int, Argument]) -> None:
         """
@@ -312,7 +342,7 @@ class Interpreter:
         :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
         :raise TooFewInstructionArgsException: Too many arguments
         """
-        pass
+        self.__check_data_types([], args)
 
     def __pushs(self, args: Dict[int, Argument]) -> None:
         """
@@ -326,7 +356,7 @@ class Interpreter:
         :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
         :raise TooFewInstructionArgsException: Too many arguments
         """
-        pass
+        self.__check_data_types([(ArgType.VAR, ArgType.INT, ArgType.BOOL, ArgType.STRING, ArgType.NIL)], args)
 
     def __pops(self, args: Dict[int, Argument]) -> None:
         """
@@ -340,7 +370,7 @@ class Interpreter:
         :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
         :raise TooFewInstructionArgsException: Too many arguments
         """
-        pass
+        self.__check_data_types([ArgType.VAR], args)
 
     def __add(self, args: Dict[int, Argument]) -> None:
         """
@@ -354,7 +384,7 @@ class Interpreter:
         :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
         :raise TooFewInstructionArgsException: Too many arguments
         """
-        pass
+        self.__check_data_types([ArgType.VAR, ArgType.INT, ArgType.INT], args)
 
     def __sub(self, args: Dict[int, Argument]) -> None:
         """
@@ -368,7 +398,7 @@ class Interpreter:
         :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
         :raise TooFewInstructionArgsException: Too many arguments
         """
-        pass
+        self.__check_data_types([ArgType.VAR, ArgType.INT, ArgType.INT], args)
 
     def __mul(self, args: Dict[int, Argument]) -> None:
         """
@@ -382,7 +412,7 @@ class Interpreter:
         :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
         :raise TooFewInstructionArgsException: Too many arguments
         """
-        pass
+        self.__check_data_types([ArgType.VAR, ArgType.INT, ArgType.INT], args)
 
     def __idiv(self, args: Dict[int, Argument]) -> None:
         """
@@ -395,8 +425,15 @@ class Interpreter:
         :raise GetValueFromNotInitVarException: Variable isn't initialized
         :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
         :raise TooFewInstructionArgsException: Too many arguments
+        :raise ZeroDivisionException: Zero division
         """
-        pass
+        self.__check_data_types([ArgType.VAR, ArgType.INT, ArgType.INT], args)
+
+        first = self.__get_value_from_arg(args[1])
+        second = self.__get_value_from_arg(args[2])
+
+        if second == 0:
+            raise ZeroDivisionException("Division with zero constant is forbidden")
 
     def __lt(self, args: Dict[int, Argument]) -> None:
         """
@@ -410,7 +447,11 @@ class Interpreter:
         :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
         :raise TooFewInstructionArgsException: Too many arguments
         """
-        pass
+        self.__check_data_types([ArgType.VAR, (ArgType.INT, ArgType.BOOL, ArgType.STRING),
+                                 (ArgType.INT, ArgType.BOOL, ArgType.STRING)], args)
+
+        if args[1].arg_type != args[2].arg_type:
+            raise InvalidDataTypeException("Both operand must be of the same type")
 
     def __gt(self, args: Dict[int, Argument]) -> None:
         """
@@ -424,7 +465,11 @@ class Interpreter:
         :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
         :raise TooFewInstructionArgsException: Too many arguments
         """
-        pass
+        self.__check_data_types([ArgType.VAR, (ArgType.INT, ArgType.BOOL, ArgType.STRING),
+                                 (ArgType.INT, ArgType.BOOL, ArgType.STRING)], args)
+
+        if args[1].arg_type != args[2].arg_type:
+            raise InvalidDataTypeException("Both operand must be of the same type")
 
     def __eq(self, args: Dict[int, Argument]) -> None:
         """
@@ -438,7 +483,11 @@ class Interpreter:
         :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
         :raise TooFewInstructionArgsException: Too many arguments
         """
-        pass
+        self.__check_data_types([ArgType.VAR, (ArgType.INT, ArgType.BOOL, ArgType.STRING, ArgType.NIL),
+                                 (ArgType.INT, ArgType.BOOL, ArgType.STRING, ArgType.NIL)], args)
+
+        if args[1].arg_type != args[2].arg_type and args[1].arg_type != ArgType.NIL and args[2].arg_type != ArgType.NIL:
+            raise InvalidDataTypeException("Both operand must be of the same type or one of them could be of type nil")
 
     def __and(self, args: Dict[int, Argument]) -> None:
         """
@@ -452,7 +501,7 @@ class Interpreter:
         :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
         :raise TooFewInstructionArgsException: Too many arguments
         """
-        pass
+        self.__check_data_types([ArgType.VAR, ArgType.BOOL, ArgType.BOOL], args)
 
     def __or(self, args: Dict[int, Argument]) -> None:
         """
@@ -466,7 +515,7 @@ class Interpreter:
         :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
         :raise TooFewInstructionArgsException: Too many arguments
         """
-        pass
+        self.__check_data_types([ArgType.VAR, ArgType.BOOL, ArgType.BOOL], args)
 
     def __not(self, args: Dict[int, Argument]) -> None:
         """
@@ -480,7 +529,7 @@ class Interpreter:
         :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
         :raise TooFewInstructionArgsException: Too many arguments
         """
-        pass
+        self.__check_data_types([ArgType.VAR, ArgType.BOOL], args)
 
     def __int2char(self, args: Dict[int, Argument]) -> None:
         """
@@ -494,7 +543,7 @@ class Interpreter:
         :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
         :raise TooFewInstructionArgsException: Too many arguments
         """
-        pass
+        self.__check_data_types([ArgType.VAR, ArgType.INT], args)
 
     def __stri2int(self, args: Dict[int, Argument]) -> None:
         """
@@ -508,7 +557,7 @@ class Interpreter:
         :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
         :raise TooFewInstructionArgsException: Too many arguments
         """
-        pass
+        self.__check_data_types([ArgType.VAR, ArgType.STRING, ArgType.INT], args)
 
     def __read(self, args: Dict[int, Argument]) -> None:
         """
@@ -522,7 +571,7 @@ class Interpreter:
         :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
         :raise TooFewInstructionArgsException: Too many arguments
         """
-        pass
+        self.__check_data_types([ArgType.VAR, ArgType.TYPE], args)
 
     def __write(self, args: Dict[int, Argument]) -> None:
         """
@@ -536,7 +585,7 @@ class Interpreter:
         :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
         :raise TooFewInstructionArgsException: Too many arguments
         """
-        pass
+        self.__check_data_types([(ArgType.VAR, ArgType.INT, ArgType.BOOL, ArgType.STRING, ArgType.NIL)], args)
 
     def __concat(self, args: Dict[int, Argument]) -> None:
         """
@@ -550,7 +599,7 @@ class Interpreter:
         :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
         :raise TooFewInstructionArgsException: Too many arguments
         """
-        pass
+        self.__check_data_types([ArgType.VAR, ArgType.STRING, ArgType.STRING], args)
 
     def __strlen(self, args: Dict[int, Argument]) -> None:
         """
@@ -564,7 +613,7 @@ class Interpreter:
         :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
         :raise TooFewInstructionArgsException: Too many arguments
         """
-        pass
+        self.__check_data_types([ArgType.VAR, ArgType.STRING], args)
 
     def __get_char(self, args: Dict[int, Argument]) -> None:
         """
@@ -578,7 +627,7 @@ class Interpreter:
         :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
         :raise TooFewInstructionArgsException: Too many arguments
         """
-        pass
+        self.__check_data_types([ArgType.VAR, ArgType.STRING, ArgType.INT], args)
 
     def __set_char(self, args: Dict[int, Argument]) -> None:
         """
@@ -592,7 +641,7 @@ class Interpreter:
         :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
         :raise TooFewInstructionArgsException: Too many arguments
         """
-        pass
+        self.__check_data_types([ArgType.VAR, ArgType.INT, ArgType.STRING], args)
 
     def __type(self, args: Dict[int, Argument]) -> None:
         """
@@ -606,7 +655,8 @@ class Interpreter:
         :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
         :raise TooFewInstructionArgsException: Too many arguments
         """
-        pass
+        self.__check_data_types([ArgType.VAR, (ArgType.VAR, ArgType.INT, ArgType.BOOL, ArgType.STRING, ArgType.NIL)],
+                                args)
 
     def __label(self, args: Dict[int, Argument]) -> None:
         """
@@ -620,7 +670,7 @@ class Interpreter:
         :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
         :raise TooFewInstructionArgsException: Too many arguments
         """
-        pass
+        self.__check_data_types([ArgType.LABEL], args)
 
     def __jump(self, args: Dict[int, Argument]) -> None:
         """
@@ -634,7 +684,7 @@ class Interpreter:
         :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
         :raise TooFewInstructionArgsException: Too many arguments
         """
-        pass
+        self.__check_data_types([ArgType.LABEL], args)
 
     def __jump_if_eq(self, args: Dict[int, Argument]) -> None:
         """
@@ -648,7 +698,11 @@ class Interpreter:
         :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
         :raise TooFewInstructionArgsException: Too many arguments
         """
-        pass
+        self.__check_data_types([ArgType.LABEL, (ArgType.INT, ArgType.BOOL, ArgType.STRING, ArgType.NIL),
+                                 (ArgType.INT, ArgType.BOOL, ArgType.STRING, ArgType.NIL)], args)
+
+        if args[1].arg_type != args[2].arg_type and args[1].arg_type != ArgType.NIL and args[2].arg_type != ArgType.NIL:
+            raise InvalidDataTypeException("Both operand must be of the same type or one of them could be of type nil")
 
     def __jump_if_neq(self, args: Dict[int, Argument]) -> None:
         """
@@ -662,7 +716,11 @@ class Interpreter:
         :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
         :raise TooFewInstructionArgsException: Too many arguments
         """
-        pass
+        self.__check_data_types([ArgType.LABEL, (ArgType.INT, ArgType.BOOL, ArgType.STRING, ArgType.NIL),
+                                 (ArgType.INT, ArgType.BOOL, ArgType.STRING, ArgType.NIL)], args)
+
+        if args[1].arg_type != args[2].arg_type and args[1].arg_type != ArgType.NIL and args[2].arg_type != ArgType.NIL:
+            raise InvalidDataTypeException("Both operand must be of the same type or one of them could be of type nil")
 
     def __exit(self, args: Dict[int, Argument]) -> NoReturn:
         """
@@ -675,8 +733,14 @@ class Interpreter:
         :raise GetValueFromNotInitVarException: Variable isn't initialized
         :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
         :raise TooFewInstructionArgsException: Too many arguments
+        :raise ExitValueOutOfRangeException: Exit code out of range
         """
-        pass
+        self.__check_data_types([ArgType.INT], args)
+
+        value = self.__get_value_from_arg(args[0])
+
+        if value < 0 or value > 49:
+            raise ExitValueOutOfRangeException(f"Exit value {value} is out of range <0, 49>")
 
     def __dprint(self, args: Dict[int, Argument]) -> None:
         """
@@ -690,7 +754,7 @@ class Interpreter:
         :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
         :raise TooFewInstructionArgsException: Too many arguments
         """
-        pass
+        self.__check_data_types([(ArgType.VAR, ArgType.INT, ArgType.BOOL, ArgType.STRING, ArgType.NIL)], args)
 
     def __break(self, args: Dict[int, Argument]) -> None:
         """
@@ -704,7 +768,7 @@ class Interpreter:
         :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
         :raise TooFewInstructionArgsException: Too many arguments
         """
-        pass
+        self.__check_data_types([], args)
 
 
 class Loader:

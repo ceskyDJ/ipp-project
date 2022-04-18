@@ -9,7 +9,8 @@ from interpreter.interpretation import Loader, Interpreter
 from interpreter.error import ExitCode, InvalidInputArgException, TooManyInputArgsException, \
     MissingRequiredInputArgException, InvalidFileArgException, BadInstructionOrderException, BadXmlStructureException, \
     XmlParsingErrorException, InvalidDataTypeException, NonExistingVarException, GetValueFromNotInitVarException, \
-    UsingUndefinedMemoryFrameException, MissingInstructionArgException, TooFewInstructionArgsException
+    UsingUndefinedMemoryFrameException, MissingInstructionArgException, TooFewInstructionArgsException, \
+    ZeroDivisionException, ExitValueOutOfRangeException
 from interpreter.cli import CliArgParser
 
 
@@ -53,6 +54,10 @@ def main() -> int:
         return ExitCode.MISSING_VALUE
     except UsingUndefinedMemoryFrameException:
         return ExitCode.NON_EXISTING_FRAME
+    except ZeroDivisionException:
+        return ExitCode.BAD_OPERAND_VALUE
+    except ExitValueOutOfRangeException:
+        return ExitCode.BAD_OPERAND_VALUE
     except Exception as e:
         # TODO: add all exceptions and returns
         print(e, file=sys.stderr)

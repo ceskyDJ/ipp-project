@@ -122,3 +122,13 @@ class VariableRedefinitionException(Exception):
 class TooFewInstructionArgsException(Exception):
     """Exception for too many input arguments (more than instruction wants)"""
     pass
+
+
+class ZeroDivisionException(Exception):
+    """Exception for trying to divide by zero"""
+    pass
+
+
+class ExitValueOutOfRangeException(Exception):
+    """Exception for invalid value in EXIT instruction that is outside <0, 49>"""
+    pass
