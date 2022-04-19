@@ -77,11 +77,6 @@ class TestCase
      */
     private function getFileContent(string $file): string
     {
-        // Create a file if not exists
-        if(!file_exists($file)) {
-            touch($file);
-        }
-
         if (!is_readable($file)) {
             throw new InvalidInputFileException("File $file can't be read");
         }
@@ -142,7 +137,14 @@ class TestCase
      */
     public function getSourceCodeFile(): string
     {
-        return "$this->testRootDir/{$this->getPath()}.src";
+        $file = "$this->testRootDir/{$this->getPath()}.src";
+
+        // Create a file if not exists
+        if(!file_exists($file)) {
+            touch($file);
+        }
+
+        return $file;
     }
 
     /**
@@ -163,7 +165,14 @@ class TestCase
      */
     public function getInputFile(): string
     {
-        return "$this->testRootDir/{$this->getPath()}.in";
+        $file = "$this->testRootDir/{$this->getPath()}.in";
+
+        // Create a file if not exists
+        if(!file_exists($file)) {
+            touch($file);
+        }
+
+        return $file;
     }
 
     /**
@@ -202,7 +211,14 @@ class TestCase
      */
     public function getReferenceOutputFile(): string
     {
-        return "$this->testRootDir/{$this->getPath()}.out";
+        $file = "$this->testRootDir/{$this->getPath()}.out";
+
+        // Create a file if not exists
+        if(!file_exists($file)) {
+            touch($file);
+        }
+
+        return $file;
     }
 
     /**
