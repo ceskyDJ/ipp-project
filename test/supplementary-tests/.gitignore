@@ -1,0 +1,5 @@
+# Test file must be added explicitly
+*.in
+*.out
+*.rc
+*.src
