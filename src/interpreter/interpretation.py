@@ -241,6 +241,46 @@ class Interpreter:
                     if (ref_type_number + 1) == len(ref_types):
                         raise e
 
+    def __check_equal_data_type(self, first_arg: Argument, second_arg: Argument, nil_allowed: bool = False) -> None:
+        """
+        Checks if two instruction arguments has the same types (or one is of type nil if nil_allowed)
+
+        <strong>It only works for types: int, bool, string, nil</strong>. It is undefined behaviour for other types.
+
+        :param first_arg: First argument to check
+        :param second_arg: Second argument to check
+        :param nil_allowed: Can one argument be of nil type?
+        :raise NonExistingVarException: Variable doesn't exist
+        :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
+        :raise EmptyLocalMemoryException: Empty local memory stack
+        :raise InvalidDataTypeException: Data types isn't equal (or no one is nil if nil_allowed)
+        """
+        # Get data type of final/stored value for the first argument
+        if first_arg.arg_type != ArgType.VAR:
+            first_type = DataType(first_arg.arg_type.value)
+        else:
+            first_variable = self.__memory.get_variable(first_arg.value)
+            first_var_value = first_variable.value
+
+            first_type = first_var_value.val_type
+
+        # Get data type of final/stored value for the second argument
+        if second_arg.arg_type != ArgType.VAR:
+            second_type = DataType(second_arg.arg_type.value)
+        else:
+            second_variable = self.__memory.get_variable(second_arg.value)
+            second_var_value = second_variable.value
+
+            second_type = second_var_value.val_type
+
+        # Classic comparison
+        if first_type != second_type:
+            if nil_allowed and first_type != DataType.NIL and second_type != DataType.NIL:
+                # Nil is allowed
+                raise InvalidDataTypeException("Both operands must be of the same type or one of them could be nil")
+            else:
+                raise InvalidDataTypeException("Both operands must be of the same type")
+
     def __get_value_from_arg(self, argument: Argument) -> Tuple[DataType, Union[int, str, bool, None]]:
         """
         Extracts value from instruction argument
@@ -555,9 +595,7 @@ class Interpreter:
         """
         self.__check_data_types([ArgType.VAR, (ArgType.INT, ArgType.BOOL, ArgType.STRING),
                                  (ArgType.INT, ArgType.BOOL, ArgType.STRING)], args)
-
-        if args[1].arg_type != args[2].arg_type:
-            raise InvalidDataTypeException("Both operand must be of the same type")
+        self.__check_equal_data_type(args[1], args[2])
 
         _, first = self.__get_value_from_arg(args[1])
         _, second = self.__get_value_from_arg(args[2])
@@ -582,9 +620,7 @@ class Interpreter:
         """
         self.__check_data_types([ArgType.VAR, (ArgType.INT, ArgType.BOOL, ArgType.STRING),
                                  (ArgType.INT, ArgType.BOOL, ArgType.STRING)], args)
-
-        if args[1].arg_type != args[2].arg_type:
-            raise InvalidDataTypeException("Both operand must be of the same type")
+        self.__check_equal_data_type(args[1], args[2])
 
         _, first = self.__get_value_from_arg(args[1])
         _, second = self.__get_value_from_arg(args[2])
@@ -609,9 +645,7 @@ class Interpreter:
         """
         self.__check_data_types([ArgType.VAR, (ArgType.INT, ArgType.BOOL, ArgType.STRING, ArgType.NIL),
                                  (ArgType.INT, ArgType.BOOL, ArgType.STRING, ArgType.NIL)], args)
-
-        if args[1].arg_type != args[2].arg_type and args[1].arg_type != ArgType.NIL and args[2].arg_type != ArgType.NIL:
-            raise InvalidDataTypeException("Both operand must be of the same type or one of them could be of type nil")
+        self.__check_equal_data_type(args[1], args[2], True)
 
         _, first = self.__get_value_from_arg(args[1])
         _, second = self.__get_value_from_arg(args[2])
@@ -980,9 +1014,7 @@ class Interpreter:
         """
         self.__check_data_types([ArgType.LABEL, (ArgType.INT, ArgType.BOOL, ArgType.STRING, ArgType.NIL),
                                  (ArgType.INT, ArgType.BOOL, ArgType.STRING, ArgType.NIL)], args)
-
-        if args[1].arg_type != args[2].arg_type and args[1].arg_type != ArgType.NIL and args[2].arg_type != ArgType.NIL:
-            raise InvalidDataTypeException("Both operand must be of the same type or one of them could be of type nil")
+        self.__check_equal_data_type(args[1], args[2], True)
 
         _, first = self.__get_value_from_arg(args[1])
         _, second = self.__get_value_from_arg(args[2])
@@ -1006,9 +1038,7 @@ class Interpreter:
         """
         self.__check_data_types([ArgType.LABEL, (ArgType.INT, ArgType.BOOL, ArgType.STRING, ArgType.NIL),
                                  (ArgType.INT, ArgType.BOOL, ArgType.STRING, ArgType.NIL)], args)
-
-        if args[1].arg_type != args[2].arg_type and args[1].arg_type != ArgType.NIL and args[2].arg_type != ArgType.NIL:
-            raise InvalidDataTypeException("Both operand must be of the same type or one of them could be of type nil")
+        self.__check_equal_data_type(args[1], args[2], True)
 
         _, first = self.__get_value_from_arg(args[1])
         _, second = self.__get_value_from_arg(args[2])
