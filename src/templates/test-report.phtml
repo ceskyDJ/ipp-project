@@ -349,11 +349,15 @@ $xmlParser->formatOutput = true;
                                             // Causes warnings for non-XML outputs, so it has to be "ignored"
                                             // Non-XML outputs is handled by $validXml variable, where is boolean
                                             // values stored (true = XML output, false = non-XML output)
-                                            $validXml = @$xmlParser->loadXML($test->getReferenceOutput());
+                                            if(!empty($test->getReferenceOutput())) {
+                                                $validXml = @$xmlParser->loadXML($test->getReferenceOutput());
 
-                                            $referenceOutput = $validXml ?
-                                                $xmlParser->saveXML()
-                                                : $test->getReferenceOutput();
+                                                $referenceOutput = $validXml
+                                                    ? $xmlParser->saveXML()
+                                                    : $test->getReferenceOutput();
+                                            } else {
+                                                $referenceOutput = "";
+                                            }
                                         ?>
                                         <strong>Požadovaný výstup: </strong>
                                         <pre class="value"><code><?= htmlspecialchars($referenceOutput) ?></code></pre>
@@ -363,11 +367,15 @@ $xmlParser->formatOutput = true;
                                             // Causes warnings for non-XML outputs, so it has to be "ignored"
                                             // Non-XML outputs is handled by $validXml variable, where is boolean
                                             // values stored (true = XML output, false = non-XML output)
-                                            $validXml = @$xmlParser->loadXML($test->getOutput());
+                                            if(!empty($test->getOutput())) {
+                                                $validXml = @$xmlParser->loadXML($test->getOutput());
 
-                                            $realOutput = $validXml ?
-                                                $xmlParser->saveXML()
-                                                : $test->getOutput();
+                                                $realOutput = $validXml
+                                                    ? $xmlParser->saveXML()
+                                                    : $test->getOutput();
+                                            } else {
+                                                $realOutput = "";
+                                            }
                                         ?>
                                         <strong>Výstup:</strong>
                                         <pre class="value"><code><?= htmlspecialchars($realOutput) ?></code></pre>
