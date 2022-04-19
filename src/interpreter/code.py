@@ -4,7 +4,6 @@
 # Date: 2022
 import re
 from enum import Enum
-from re import Match
 from typing import Dict, Union
 
 from interpreter.error import UsingUndefinedLabelException, MissingInstructionArgException, \
