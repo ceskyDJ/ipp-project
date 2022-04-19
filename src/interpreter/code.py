@@ -2,9 +2,10 @@
 #
 # Author: Michal Šmahel (xsmahe01)
 # Date: 2022
-
+import re
 from enum import Enum
-from typing import Dict
+from re import Match
+from typing import Dict, Union
 
 from interpreter.error import UsingUndefinedLabelException, MissingInstructionArgException, \
     InvalidInstructionArgumentValueException, DuplicateLabelException
@@ -145,6 +146,8 @@ class Argument:
         self.__arg_type = arg_type
         self.__value = value
 
+        self.__string_regex = re.compile("\\\\(\\d{3})")
+
     @property
     def arg_type(self) -> 'ArgType':
         """
@@ -155,7 +158,7 @@ class Argument:
         return self.__arg_type
 
     @property
-    def value(self):
+    def value(self) -> Union[int, str, bool, None]:
         """
         Getter for argument value
 
@@ -171,6 +174,10 @@ class Argument:
             return self.__value.lower() == "true"
         elif self.__arg_type == ArgType.NIL:
             return None
+        elif self.__arg_type == ArgType.STRING:
+            # Convert \XXX escape sequences to characters
+            # Inspired by: https://stackoverflow.com/a/18737964
+            return self.__string_regex.sub(lambda match: chr(int(match.group(1))), self.__value)
         else:
             # In all other cases value is of string data type
             return self.__value
