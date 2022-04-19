@@ -7,7 +7,7 @@ from enum import Enum
 from typing import Dict
 
 from interpreter.error import UsingUndefinedLabelException, MissingInstructionArgException, \
-    InvalidInstructionArgumentValue
+    InvalidInstructionArgumentValueException, DuplicateLabelException
 
 
 class Program:
@@ -18,7 +18,8 @@ class Program:
         Class constructor
 
         :param unsorted_instructions: Dictionary of instructions
-        :raise InvalidInstructionArgumentValue: Invalid argument value
+        :raise InvalidInstructionArgumentValueException: Invalid argument value
+        :raise DuplicateLabelException: Duplicate labels
         """
         self.__prepare_instructions(unsorted_instructions)
         self.__create_label_dict()
@@ -35,8 +36,20 @@ class Program:
         """
         Creates a dictionary of labels
 
-        :raise InvalidInstructionArgumentValue: Invalid argument value
+        :raise InvalidInstructionArgumentValueException: Invalid argument value
+        :raise DuplicateLabelException: Duplicate labels
         """
+        # Check uniqueness of label names
+        unique_label_names = {
+            instruction.args[0].value for instruction in self.__instructions if instruction.op_code == OpCode.LABEL
+        }
+        all_label_names = [
+            instruction.args[0].value for instruction in self.__instructions if instruction.op_code == OpCode.LABEL
+        ]
+
+        if len(unique_label_names) != len(all_label_names):
+            raise DuplicateLabelException("Program contains some duplicate labels")
+
         # Create groups {label_name: position_in_instructions_list}
         self.__labels = {
             instruction.args[0].value: position
@@ -147,13 +160,13 @@ class Argument:
         Getter for argument value
 
         :return: Argument value
-        :raise InvalidInstructionArgumentValue: Invalid value
+        :raise InvalidInstructionArgumentValueException: Invalid value
         """
         if self.__arg_type == ArgType.INT:
             try:
                 return int(self.__value)
             except ValueError:
-                raise InvalidInstructionArgumentValue("Invalid integer value of instruction argument")
+                raise InvalidInstructionArgumentValueException("Invalid integer value of instruction argument")
         elif self.__arg_type == ArgType.BOOL:
             return self.__value.lower() == "true"
         elif self.__arg_type == ArgType.NIL:

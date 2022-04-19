@@ -13,7 +13,8 @@ from interpreter.error import ExitCode, InvalidInputArgException, TooManyInputAr
     UsingUndefinedMemoryFrameException, MissingInstructionArgException, TooFewInstructionArgsException, \
     ZeroDivisionException, ExitValueOutOfRangeException, EmptyLocalMemoryException, UsingUndefinedLabelException, \
     PopEmptyStackException, InvalidAsciiPositionException, IndexingOutsideStringException, \
-    VariableRedefinitionException, InvalidInstructionOpCode, InvalidInstructionArgumentValue
+    VariableRedefinitionException, InvalidInstructionOpCode, InvalidInstructionArgumentValueException, \
+    DuplicateLabelException
 from interpreter.cli import CliArgParser
 
 
@@ -43,8 +44,10 @@ def main() -> int:
         return ExitCode.BAD_XML_STRUCTURE
     except XmlParsingErrorException:
         return ExitCode.NOT_WELL_FORMED_XML
-    except InvalidInstructionArgumentValue:
+    except InvalidInstructionArgumentValueException:
         return ExitCode.BAD_OPERAND_VALUE
+    except DuplicateLabelException:
+        return ExitCode.SEMANTIC_ERROR
     except:
         traceback.print_exc()
 
@@ -56,7 +59,7 @@ def main() -> int:
         interpreter.run(program)
     except InvalidDataTypeException:
         return ExitCode.BAD_OPERAND_TYPES
-    except (MissingInstructionArgException, TooFewInstructionArgsException, InvalidInstructionArgumentValue):
+    except (MissingInstructionArgException, TooFewInstructionArgsException, InvalidInstructionArgumentValueException):
         return ExitCode.BAD_XML_STRUCTURE
     except NonExistingVarException:
         return ExitCode.NON_EXISTING_VARIABLE

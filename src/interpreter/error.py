@@ -149,6 +149,11 @@ class InvalidInstructionOpCode(Exception):
     pass
 
 
-class InvalidInstructionArgumentValue(Exception):
+class InvalidInstructionArgumentValueException(Exception):
     """Exception for invalid value in instruction argument"""
+    pass
+
+
+class DuplicateLabelException(Exception):
+    """Exception for duplicate labels"""
     pass
