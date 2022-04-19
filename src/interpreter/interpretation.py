@@ -300,6 +300,8 @@ class Interpreter:
         """
         if argument.arg_type in [ArgType.INT, ArgType.BOOL, ArgType.STRING, ArgType.NIL]:
             return DataType(argument.arg_type.value), argument.value
+        elif argument.arg_type == ArgType.TYPE:
+            return DataType.STRING, argument.value
         else:
             # Variable in argument --> need to be read from memory
             variable = self.__memory.get_variable(argument.value)
