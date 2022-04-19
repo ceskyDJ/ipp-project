@@ -11,7 +11,8 @@ from xml.etree.ElementTree import ElementTree, ParseError
 
 from interpreter.error import BadInstructionOrderException, BadXmlStructureException, XmlParsingErrorException, \
     MissingInstructionArgException, InvalidDataTypeException, TooFewInstructionArgsException, ZeroDivisionException, \
-    ExitValueOutOfRangeException, InvalidAsciiPositionException, IndexingOutsideStringException
+    ExitValueOutOfRangeException, InvalidAsciiPositionException, IndexingOutsideStringException, \
+    InvalidInstructionOpCode
 from interpreter.code import Program, Instruction, OpCode, Argument, ArgType, EndOfProgram
 from interpreter.memory import ProcessMemory, CallStack, DataStack, DataType, Value
 
@@ -1075,6 +1076,7 @@ class Loader:
         :return: Loaded program
         :raise BadInstructionOrderException: Duplicate or negative instruction order
         :raise BadXmlStructureException: Bad instruction location, missing attributes or values
+        :raise InvalidInstructionOpCode: Invalid instruction opcode
         """
         # Set stdin if no file has been specified
         if self.__sources_file is None:
@@ -1120,7 +1122,10 @@ class Loader:
             # Instruction operation code
             if 'opcode' not in xml_instruction.attrib:
                 raise BadXmlStructureException("Instruction element must have required attribute opcode")
-            op_code = OpCode(xml_instruction.attrib['opcode'].upper())
+            try:
+                op_code = OpCode(xml_instruction.attrib['opcode'].upper())
+            except ValueError:
+                raise InvalidInstructionOpCode("Invalid instruction operation code")
 
             # Instruction arguments
             args: Dict[int, Argument] = {}

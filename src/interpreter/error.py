@@ -142,3 +142,8 @@ class InvalidAsciiPositionException(Exception):
 class IndexingOutsideStringException(Exception):
     """Exception for accessing position (char) outside the string"""
     pass
+
+
+class InvalidInstructionOpCode(Exception):
+    """Exception for invalid instruction operation code"""
+    pass
