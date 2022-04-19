@@ -38,6 +38,8 @@ def main() -> int:
     interpreter = Interpreter(cli_arg_parser.input)
 
     # Load program
+    # For unexpected errors (primarily for debugging):
+    # noinspection PyBroadException
     try:
         program = loader.load_program()
     except (BadInstructionOrderException, BadXmlStructureException, InvalidInstructionOpCode):
@@ -48,13 +50,15 @@ def main() -> int:
         return ExitCode.BAD_OPERAND_VALUE
     except DuplicateLabelException:
         return ExitCode.SEMANTIC_ERROR
-    except:
+    except Exception:
         traceback.print_exc()
 
         # For unexpected errors (primarily for debugging)
         return ExitCode.INTERNAL_ERROR
 
     # Interpretation
+    # For unexpected errors (primarily for debugging):
+    # noinspection PyBroadException
     try:
         interpreter.run(program)
     except InvalidDataTypeException:
@@ -77,8 +81,7 @@ def main() -> int:
         return ExitCode.BAD_STRING_USAGE
     except VariableRedefinitionException:
         return ExitCode.SEMANTIC_ERROR
-    except:
-        # For unexpected errors (primarily for debugging)
+    except Exception:
         traceback.print_exc()
 
         return ExitCode.INTERNAL_ERROR
