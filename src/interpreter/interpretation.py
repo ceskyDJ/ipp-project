@@ -106,6 +106,9 @@ class Interpreter:
         :raise VariableRedefinitionException: Already defined variable
         :raise InvalidInstructionArgumentValueException: Invalid instruction argument value
         """
+        # Should program counter be incremented after instruction execution?
+        increment_program_counter = True
+
         if instruction.op_code == OpCode.MOVE:
             self.__move(instruction.args)
         elif instruction.op_code == OpCode.CREATEFRAME:
@@ -118,8 +121,10 @@ class Interpreter:
             self.__defvar(instruction.args)
         elif instruction.op_code == OpCode.CALL:
             self.__call(instruction.args)
+            increment_program_counter = False
         elif instruction.op_code == OpCode.RETURN:
             self.__return(instruction.args)
+            increment_program_counter = False
         elif instruction.op_code == OpCode.PUSHS:
             self.__pushs(instruction.args)
         elif instruction.op_code == OpCode.POPS:
@@ -166,10 +171,13 @@ class Interpreter:
             self.__label(instruction.args)
         elif instruction.op_code == OpCode.JUMP:
             self.__jump(instruction.args)
+            increment_program_counter = False
         elif instruction.op_code == OpCode.JUMPIFEQ:
             self.__jump_if_eq(instruction.args)
+            increment_program_counter = False
         elif instruction.op_code == OpCode.JUMPIFNEQ:
             self.__jump_if_neq(instruction.args)
+            increment_program_counter = False
         elif instruction.op_code == OpCode.EXIT:
             self.__exit(instruction.args)
         elif instruction.op_code == OpCode.DPRINT:
@@ -178,7 +186,8 @@ class Interpreter:
             self.__break(instruction.args)
 
         # Increment program counter
-        self.__program_counter += 1
+        if increment_program_counter:
+            self.__program_counter += 1
 
     def __check_data_types(self, pattern: List[Union[ArgType, Tuple[ArgType, ...]]], args: Dict[int, Argument]) -> None:
         """
@@ -415,7 +424,7 @@ class Interpreter:
 
         # Jump to instruction after label
         label_position = self.__program.get_jump_target(args[0].value)
-        self.__program_counter = label_position + 1
+        self.__program_counter = label_position
 
     def __return(self, args: Dict[int, Argument]) -> None:
         """
@@ -1021,6 +1030,11 @@ class Interpreter:
 
         if first == second:
             self.__program_counter = self.__program.get_jump_target(args[0].value)
+        else:
+            # Program counter needs to be incremented here, because standard incrementing in __execute()
+            # method is disabled for jump instructions
+            # Incrementation here means "Go to the next instruction, the jump will not happen"
+            self.__program_counter += 1
 
     def __jump_if_neq(self, args: Dict[int, Argument]) -> None:
         """
@@ -1045,6 +1059,11 @@ class Interpreter:
 
         if first != second:
             self.__program_counter = self.__program.get_jump_target(args[0].value)
+        else:
+            # Program counter needs to be incremented here, because standard incrementing in __execute()
+            # method is disabled for jump instructions
+            # Incrementation here means "Go to the next instruction, the jump will not happen"
+            self.__program_counter += 1
 
     def __exit(self, args: Dict[int, Argument]) -> NoReturn:
         """
