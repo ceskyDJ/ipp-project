@@ -220,7 +220,7 @@ class Interpreter:
                         # Types must be tested indirectly from variable's value
                         variable = self.__memory.get_variable(args[arg_number].value)
                         var_value = variable.value
-                        if ArgType(var_value.val_type) != ref_type:
+                        if ArgType(var_value.val_type.value) != ref_type:
                             raise InvalidDataTypeException("Invalid data type of variable in instruction operand")
                     elif arg_type != ArgType.VAR and ref_type == ArgType.VAR:
                         # Value <-> Var
