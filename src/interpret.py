@@ -13,7 +13,7 @@ from interpreter.error import ExitCode, InvalidInputArgException, TooManyInputAr
     UsingUndefinedMemoryFrameException, MissingInstructionArgException, TooFewInstructionArgsException, \
     ZeroDivisionException, ExitValueOutOfRangeException, EmptyLocalMemoryException, UsingUndefinedLabelException, \
     PopEmptyStackException, InvalidAsciiPositionException, IndexingOutsideStringException, \
-    VariableRedefinitionException, InvalidInstructionOpCode
+    VariableRedefinitionException, InvalidInstructionOpCode, InvalidInstructionArgumentValue
 from interpreter.cli import CliArgParser
 
 
@@ -43,6 +43,8 @@ def main() -> int:
         return ExitCode.BAD_XML_STRUCTURE
     except XmlParsingErrorException:
         return ExitCode.NOT_WELL_FORMED_XML
+    except InvalidInstructionArgumentValue:
+        return ExitCode.BAD_OPERAND_VALUE
     except:
         traceback.print_exc()
 
@@ -54,7 +56,7 @@ def main() -> int:
         interpreter.run(program)
     except InvalidDataTypeException:
         return ExitCode.BAD_OPERAND_TYPES
-    except (MissingInstructionArgException, TooFewInstructionArgsException):
+    except (MissingInstructionArgException, TooFewInstructionArgsException, InvalidInstructionArgumentValue):
         return ExitCode.BAD_XML_STRUCTURE
     except NonExistingVarException:
         return ExitCode.NON_EXISTING_VARIABLE
@@ -62,9 +64,7 @@ def main() -> int:
         return ExitCode.MISSING_VALUE
     except (UsingUndefinedMemoryFrameException, EmptyLocalMemoryException):
         return ExitCode.NON_EXISTING_FRAME
-    except ZeroDivisionException:
-        return ExitCode.BAD_OPERAND_VALUE
-    except ExitValueOutOfRangeException:
+    except (ZeroDivisionException, ExitValueOutOfRangeException):
         return ExitCode.BAD_OPERAND_VALUE
     except UsingUndefinedLabelException:
         return ExitCode.SEMANTIC_ERROR

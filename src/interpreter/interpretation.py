@@ -53,6 +53,7 @@ class Interpreter:
         :raise InvalidAsciiPositionException: Converting non-ASCII position to char
         :raise IndexingOutsideStringException: Indexing outside string
         :raise VariableRedefinitionException: Already defined variable
+        :raise InvalidInstructionArgumentValue: Invalid instruction argument value
         """
         self.__program = program
 
@@ -103,6 +104,7 @@ class Interpreter:
         :raise InvalidAsciiPositionException: Converting non-ASCII position to char
         :raise IndexingOutsideStringException: Indexing outside string
         :raise VariableRedefinitionException: Already defined variable
+        :raise InvalidInstructionArgumentValue: Invalid instruction argument value
         """
         if instruction.op_code == OpCode.MOVE:
             self.__move(instruction.args)
@@ -191,6 +193,7 @@ class Interpreter:
         :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
         :raise EmptyLocalMemoryException: Empty local memory stack
         :raise TooFewInstructionArgsException: Too many arguments
+        :raise InvalidInstructionArgumentValue: Invalid instruction argument value
         """
         if len(args) > len(pattern):
             raise TooFewInstructionArgsException(f"Instruction wants {len(pattern)} args but got {len(args)}")
@@ -244,15 +247,10 @@ class Interpreter:
 
         :param argument: Instruction argument
         :return: Extracted value (truly typed)
+        :raise InvalidInstructionArgumentValue: Invalid instruction argument value
         """
-        if argument.arg_type == ArgType.INT:
-            return DataType.INT, int(argument.value)
-        elif argument.arg_type == ArgType.BOOL:
-            return DataType.BOOL, bool(argument.value.lower() == "true")
-        elif argument.arg_type == ArgType.STRING:
-            return DataType.STRING, str(argument.value)
-        elif argument.arg_type == ArgType.NIL:
-            return DataType.NIL, None
+        if argument.arg_type in [ArgType.INT, ArgType.BOOL, ArgType.STRING, ArgType.NIL]:
+            return DataType(argument.arg_type.value), argument.value
         else:
             # Variable in argument --> need to be read from memory
             variable = self.__memory.get_variable(argument.value)
@@ -272,6 +270,7 @@ class Interpreter:
         :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
         :raise EmptyLocalMemoryException: Empty local memory stack
         :raise TooFewInstructionArgsException: Too many arguments
+        :raise InvalidInstructionArgumentValue: Invalid instruction argument value
         """
         self.__check_data_types([ArgType.VAR, (ArgType.INT, ArgType.BOOL, ArgType.STRING, ArgType.NIL)], args)
 
@@ -293,6 +292,7 @@ class Interpreter:
         :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
         :raise EmptyLocalMemoryException: Empty local memory stack
         :raise TooFewInstructionArgsException: Too many arguments
+        :raise InvalidInstructionArgumentValue: Invalid instruction argument value
         """
         self.__check_data_types([], args)
 
@@ -310,6 +310,7 @@ class Interpreter:
         :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
         :raise EmptyLocalMemoryException: Empty local memory stack
         :raise TooFewInstructionArgsException: Too many arguments
+        :raise InvalidInstructionArgumentValue: Invalid instruction argument value
         """
         self.__check_data_types([], args)
 
@@ -327,6 +328,7 @@ class Interpreter:
         :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
         :raise EmptyLocalMemoryException: Empty local memory stack
         :raise TooFewInstructionArgsException: Too many arguments
+        :raise InvalidInstructionArgumentValue: Invalid instruction argument value
         """
         self.__check_data_types([], args)
 
@@ -344,6 +346,7 @@ class Interpreter:
         :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
         :raise EmptyLocalMemoryException: Empty local memory stack
         :raise TooFewInstructionArgsException: Too many arguments
+        :raise InvalidInstructionArgumentValue: Invalid instruction argument value
         :raise VariableRedefinitionException: Already defined variable
         """
         self.__check_data_types([ArgType.VAR], args)
@@ -362,6 +365,7 @@ class Interpreter:
         :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
         :raise EmptyLocalMemoryException: Empty local memory stack
         :raise TooFewInstructionArgsException: Too many arguments
+        :raise InvalidInstructionArgumentValue: Invalid instruction argument value
         :raise UsingUndefinedLabelException: Label is undefined in the program
         """
         self.__check_data_types([ArgType.LABEL], args)
@@ -385,6 +389,7 @@ class Interpreter:
         :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
         :raise EmptyLocalMemoryException: Empty local memory stack
         :raise TooFewInstructionArgsException: Too many arguments
+        :raise InvalidInstructionArgumentValue: Invalid instruction argument value
         :raise PopEmptyStackException: Popping from an empty call stack
         """
         self.__check_data_types([], args)
@@ -407,6 +412,7 @@ class Interpreter:
         :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
         :raise EmptyLocalMemoryException: Empty local memory stack
         :raise TooFewInstructionArgsException: Too many arguments
+        :raise InvalidInstructionArgumentValue: Invalid instruction argument value
         """
         self.__check_data_types([(ArgType.VAR, ArgType.INT, ArgType.BOOL, ArgType.STRING, ArgType.NIL)], args)
 
@@ -427,6 +433,7 @@ class Interpreter:
         :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
         :raise EmptyLocalMemoryException: Empty local memory stack
         :raise TooFewInstructionArgsException: Too many arguments
+        :raise InvalidInstructionArgumentValue: Invalid instruction argument value
         :raise PopEmptyStackException: Popping from an empty data stack
         """
         self.__check_data_types([ArgType.VAR], args)
@@ -448,6 +455,7 @@ class Interpreter:
         :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
         :raise EmptyLocalMemoryException: Empty local memory stack
         :raise TooFewInstructionArgsException: Too many arguments
+        :raise InvalidInstructionArgumentValue: Invalid instruction argument value
         """
         self.__check_data_types([ArgType.VAR, ArgType.INT, ArgType.INT], args)
 
@@ -470,6 +478,7 @@ class Interpreter:
         :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
         :raise EmptyLocalMemoryException: Empty local memory stack
         :raise TooFewInstructionArgsException: Too many arguments
+        :raise InvalidInstructionArgumentValue: Invalid instruction argument value
         """
         self.__check_data_types([ArgType.VAR, ArgType.INT, ArgType.INT], args)
 
@@ -492,6 +501,7 @@ class Interpreter:
         :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
         :raise EmptyLocalMemoryException: Empty local memory stack
         :raise TooFewInstructionArgsException: Too many arguments
+        :raise InvalidInstructionArgumentValue: Invalid instruction argument value
         """
         self.__check_data_types([ArgType.VAR, ArgType.INT, ArgType.INT], args)
 
@@ -514,6 +524,7 @@ class Interpreter:
         :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
         :raise EmptyLocalMemoryException: Empty local memory stack
         :raise TooFewInstructionArgsException: Too many arguments
+        :raise InvalidInstructionArgumentValue: Invalid instruction argument value
         :raise ZeroDivisionException: Zero division
         """
         self.__check_data_types([ArgType.VAR, ArgType.INT, ArgType.INT], args)
@@ -540,6 +551,7 @@ class Interpreter:
         :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
         :raise EmptyLocalMemoryException: Empty local memory stack
         :raise TooFewInstructionArgsException: Too many arguments
+        :raise InvalidInstructionArgumentValue: Invalid instruction argument value
         """
         self.__check_data_types([ArgType.VAR, (ArgType.INT, ArgType.BOOL, ArgType.STRING),
                                  (ArgType.INT, ArgType.BOOL, ArgType.STRING)], args)
@@ -566,6 +578,7 @@ class Interpreter:
         :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
         :raise EmptyLocalMemoryException: Empty local memory stack
         :raise TooFewInstructionArgsException: Too many arguments
+        :raise InvalidInstructionArgumentValue: Invalid instruction argument value
         """
         self.__check_data_types([ArgType.VAR, (ArgType.INT, ArgType.BOOL, ArgType.STRING),
                                  (ArgType.INT, ArgType.BOOL, ArgType.STRING)], args)
@@ -592,6 +605,7 @@ class Interpreter:
         :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
         :raise EmptyLocalMemoryException: Empty local memory stack
         :raise TooFewInstructionArgsException: Too many arguments
+        :raise InvalidInstructionArgumentValue: Invalid instruction argument value
         """
         self.__check_data_types([ArgType.VAR, (ArgType.INT, ArgType.BOOL, ArgType.STRING, ArgType.NIL),
                                  (ArgType.INT, ArgType.BOOL, ArgType.STRING, ArgType.NIL)], args)
@@ -618,6 +632,7 @@ class Interpreter:
         :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
         :raise EmptyLocalMemoryException: Empty local memory stack
         :raise TooFewInstructionArgsException: Too many arguments
+        :raise InvalidInstructionArgumentValue: Invalid instruction argument value
         """
         self.__check_data_types([ArgType.VAR, ArgType.BOOL, ArgType.BOOL], args)
 
@@ -640,6 +655,7 @@ class Interpreter:
         :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
         :raise EmptyLocalMemoryException: Empty local memory stack
         :raise TooFewInstructionArgsException: Too many arguments
+        :raise InvalidInstructionArgumentValue: Invalid instruction argument value
         """
         self.__check_data_types([ArgType.VAR, ArgType.BOOL, ArgType.BOOL], args)
 
@@ -662,6 +678,7 @@ class Interpreter:
         :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
         :raise EmptyLocalMemoryException: Empty local memory stack
         :raise TooFewInstructionArgsException: Too many arguments
+        :raise InvalidInstructionArgumentValue: Invalid instruction argument value
         """
         self.__check_data_types([ArgType.VAR, ArgType.BOOL], args)
 
@@ -683,6 +700,7 @@ class Interpreter:
         :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
         :raise EmptyLocalMemoryException: Empty local memory stack
         :raise TooFewInstructionArgsException: Too many arguments
+        :raise InvalidInstructionArgumentValue: Invalid instruction argument value
         :raise InvalidAsciiPositionException: Converting non-ASCII position to char
         """
         self.__check_data_types([ArgType.VAR, ArgType.INT], args)
@@ -708,6 +726,7 @@ class Interpreter:
         :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
         :raise EmptyLocalMemoryException: Empty local memory stack
         :raise TooFewInstructionArgsException: Too many arguments
+        :raise InvalidInstructionArgumentValue: Invalid instruction argument value
         :raise IndexingOutsideStringException: Indexing outside string
         """
         self.__check_data_types([ArgType.VAR, ArgType.STRING, ArgType.INT], args)
@@ -734,6 +753,7 @@ class Interpreter:
         :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
         :raise EmptyLocalMemoryException: Empty local memory stack
         :raise TooFewInstructionArgsException: Too many arguments
+        :raise InvalidInstructionArgumentValue: Invalid instruction argument value
         """
         self.__check_data_types([ArgType.VAR, ArgType.TYPE], args)
 
@@ -770,6 +790,7 @@ class Interpreter:
         :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
         :raise EmptyLocalMemoryException: Empty local memory stack
         :raise TooFewInstructionArgsException: Too many arguments
+        :raise InvalidInstructionArgumentValue: Invalid instruction argument value
         """
         self.__check_data_types([(ArgType.VAR, ArgType.INT, ArgType.BOOL, ArgType.STRING, ArgType.NIL)], args)
 
@@ -794,6 +815,7 @@ class Interpreter:
         :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
         :raise EmptyLocalMemoryException: Empty local memory stack
         :raise TooFewInstructionArgsException: Too many arguments
+        :raise InvalidInstructionArgumentValue: Invalid instruction argument value
         """
         self.__check_data_types([ArgType.VAR, ArgType.STRING, ArgType.STRING], args)
 
@@ -816,6 +838,7 @@ class Interpreter:
         :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
         :raise EmptyLocalMemoryException: Empty local memory stack
         :raise TooFewInstructionArgsException: Too many arguments
+        :raise InvalidInstructionArgumentValue: Invalid instruction argument value
         """
         self.__check_data_types([ArgType.VAR, ArgType.STRING], args)
 
@@ -837,6 +860,7 @@ class Interpreter:
         :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
         :raise EmptyLocalMemoryException: Empty local memory stack
         :raise TooFewInstructionArgsException: Too many arguments
+        :raise InvalidInstructionArgumentValue: Invalid instruction argument value
         :raise IndexingOutsideStringException: Indexing outside string
         """
         self.__check_data_types([ArgType.VAR, ArgType.STRING, ArgType.INT], args)
@@ -863,6 +887,7 @@ class Interpreter:
         :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
         :raise EmptyLocalMemoryException: Empty local memory stack
         :raise TooFewInstructionArgsException: Too many arguments
+        :raise InvalidInstructionArgumentValue: Invalid instruction argument value
         """
         self.__check_data_types([ArgType.VAR, ArgType.INT, ArgType.STRING], args)
 
@@ -891,6 +916,7 @@ class Interpreter:
         :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
         :raise EmptyLocalMemoryException: Empty local memory stack
         :raise TooFewInstructionArgsException: Too many arguments
+        :raise InvalidInstructionArgumentValue: Invalid instruction argument value
         """
         self.__check_data_types([ArgType.VAR, (ArgType.VAR, ArgType.INT, ArgType.BOOL, ArgType.STRING, ArgType.NIL)],
                                 args)
@@ -913,6 +939,7 @@ class Interpreter:
         :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
         :raise EmptyLocalMemoryException: Empty local memory stack
         :raise TooFewInstructionArgsException: Too many arguments
+        :raise InvalidInstructionArgumentValue: Invalid instruction argument value
         """
         self.__check_data_types([ArgType.LABEL], args)
 
@@ -931,6 +958,7 @@ class Interpreter:
         :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
         :raise EmptyLocalMemoryException: Empty local memory stack
         :raise TooFewInstructionArgsException: Too many arguments
+        :raise InvalidInstructionArgumentValue: Invalid instruction argument value
         """
         self.__check_data_types([ArgType.LABEL], args)
 
@@ -948,6 +976,7 @@ class Interpreter:
         :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
         :raise EmptyLocalMemoryException: Empty local memory stack
         :raise TooFewInstructionArgsException: Too many arguments
+        :raise InvalidInstructionArgumentValue: Invalid instruction argument value
         """
         self.__check_data_types([ArgType.LABEL, (ArgType.INT, ArgType.BOOL, ArgType.STRING, ArgType.NIL),
                                  (ArgType.INT, ArgType.BOOL, ArgType.STRING, ArgType.NIL)], args)
@@ -973,6 +1002,7 @@ class Interpreter:
         :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
         :raise EmptyLocalMemoryException: Empty local memory stack
         :raise TooFewInstructionArgsException: Too many arguments
+        :raise InvalidInstructionArgumentValue: Invalid instruction argument value
         """
         self.__check_data_types([ArgType.LABEL, (ArgType.INT, ArgType.BOOL, ArgType.STRING, ArgType.NIL),
                                  (ArgType.INT, ArgType.BOOL, ArgType.STRING, ArgType.NIL)], args)
@@ -998,6 +1028,7 @@ class Interpreter:
         :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
         :raise EmptyLocalMemoryException: Empty local memory stack
         :raise TooFewInstructionArgsException: Too many arguments
+        :raise InvalidInstructionArgumentValue: Invalid instruction argument value
         :raise ExitValueOutOfRangeException: Exit code out of range
         """
         self.__check_data_types([ArgType.INT], args)
@@ -1021,6 +1052,7 @@ class Interpreter:
         :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
         :raise EmptyLocalMemoryException: Empty local memory stack
         :raise TooFewInstructionArgsException: Too many arguments
+        :raise InvalidInstructionArgumentValue: Invalid instruction argument value
         """
         self.__check_data_types([(ArgType.VAR, ArgType.INT, ArgType.BOOL, ArgType.STRING, ArgType.NIL)], args)
 
@@ -1049,6 +1081,7 @@ class Interpreter:
         :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
         :raise EmptyLocalMemoryException: Empty local memory stack
         :raise TooFewInstructionArgsException: Too many arguments
+        :raise InvalidInstructionArgumentValue: Invalid instruction argument value
         """
         self.__check_data_types([], args)
 
@@ -1077,6 +1110,7 @@ class Loader:
         :raise BadInstructionOrderException: Duplicate or negative instruction order
         :raise BadXmlStructureException: Bad instruction location, missing attributes or values
         :raise InvalidInstructionOpCode: Invalid instruction opcode
+        :raise InvalidInstructionArgumentValue: Invalid instruction argument value
         """
         # Set stdin if no file has been specified
         if self.__sources_file is None:

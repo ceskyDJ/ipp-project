@@ -6,7 +6,8 @@
 from enum import Enum
 from typing import Dict
 
-from interpreter.error import UsingUndefinedLabelException, MissingInstructionArgException
+from interpreter.error import UsingUndefinedLabelException, MissingInstructionArgException, \
+    InvalidInstructionArgumentValue
 
 
 class Program:
@@ -17,6 +18,7 @@ class Program:
         Class constructor
 
         :param unsorted_instructions: Dictionary of instructions
+        :raise InvalidInstructionArgumentValue: Invalid argument value
         """
         self.__prepare_instructions(unsorted_instructions)
         self.__create_label_dict()
@@ -30,7 +32,11 @@ class Program:
         self.__instructions = [unsorted_instructions[order] for order in sorted(unsorted_instructions.keys())]
 
     def __create_label_dict(self):
-        """Creates a dictionary of labels"""
+        """
+        Creates a dictionary of labels
+
+        :raise InvalidInstructionArgumentValue: Invalid argument value
+        """
         # Create groups {label_name: position_in_instructions_list}
         self.__labels = {
             instruction.args[0].value: position
@@ -141,12 +147,16 @@ class Argument:
         Getter for argument value
 
         :return: Argument value
+        :raise InvalidInstructionArgumentValue: Invalid value
         """
         if self.__arg_type == ArgType.INT:
-            return int(self.__value)
+            try:
+                return int(self.__value)
+            except ValueError:
+                raise InvalidInstructionArgumentValue("Invalid integer value of instruction argument")
         elif self.__arg_type == ArgType.BOOL:
-            return bool(self.__value)
-        elif self.__arg_type == ArgType.INT:
+            return self.__value.lower() == "true"
+        elif self.__arg_type == ArgType.NIL:
             return None
         else:
             # In all other cases value is of string data type

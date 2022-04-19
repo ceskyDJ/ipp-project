@@ -147,3 +147,8 @@ class IndexingOutsideStringException(Exception):
 class InvalidInstructionOpCode(Exception):
     """Exception for invalid instruction operation code"""
     pass
+
+
+class InvalidInstructionArgumentValue(Exception):
+    """Exception for invalid value in instruction argument"""
+    pass
