@@ -245,12 +245,16 @@ $xmlParser->formatOutput = true;
                 <div class="summary-item">
                     <strong>Úspěšné: </strong>
                     <span><?= $successful ?></span>
+                    <?php if($tests != 0): ?>
                     <span class="percentage">(<?= floor($successful / $tests * 100) ?>&nbsp;%)</span>
+                    <?php endif ?>
                 </div>
                 <div class="summary-item">
                     <strong>Neúspěšné: </strong>
                     <span><?= $failed ?></span>
+                    <?php if($tests != 0): ?>
                     <span class="percentage">(<?= ceil($failed / $tests * 100) ?>&nbsp;%)</span>
+                    <?php endif ?>
                 </div>
             </div>
         </header>
