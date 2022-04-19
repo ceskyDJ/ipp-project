@@ -1105,7 +1105,10 @@ class Loader:
             # Instruction order
             if 'order' not in xml_instruction.attrib:
                 raise BadXmlStructureException("Instruction element must have required attribute order")
-            order = int(xml_instruction.attrib['order'])
+            try:
+                order = int(xml_instruction.attrib['order'])
+            except ValueError:
+                raise BadInstructionOrderException("Instruction order must be valid integer value")
 
             if order < 0:
                 raise BadInstructionOrderException("Instruction order must be positive number or zero")
