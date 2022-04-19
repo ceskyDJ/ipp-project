@@ -1095,7 +1095,7 @@ class Loader:
             raise BadXmlStructureException("Program element must have required attribute language with value IPPcode22")
 
         # Prepare regular expression for extracting arguments' numbers
-        extract_arg_pos_regex = re.compile("arg(\\d+)")
+        extract_arg_pos_regex = re.compile("^arg(\\d+)$")
 
         instructions: Dict[int, Instruction] = {}
         for xml_instruction in parsed_xml:
