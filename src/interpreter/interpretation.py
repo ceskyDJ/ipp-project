@@ -12,7 +12,7 @@ from xml.etree.ElementTree import ElementTree, ParseError
 from interpreter.error import BadInstructionOrderException, BadXmlStructureException, XmlParsingErrorException, \
     MissingInstructionArgException, InvalidDataTypeException, TooFewInstructionArgsException, ZeroDivisionException, \
     ExitValueOutOfRangeException, InvalidAsciiPositionException, IndexingOutsideStringException, \
-    InvalidInstructionOpCode
+    InvalidInstructionOpCode, GetValueFromNotInitVarException
 from interpreter.code import Program, Instruction, OpCode, Argument, ArgType, EndOfProgram
 from interpreter.memory import ProcessMemory, CallStack, DataStack, DataType, Value
 
@@ -296,7 +296,11 @@ class Interpreter:
 
         :param argument: Instruction argument
         :return: Extracted value (truly typed)
+        :raise NonExistingVarException: Variable doesn't exist
+        :raise UsingUndefinedMemoryFrameException: Using undefined memory frame
+        :raise EmptyLocalMemoryException: Empty local memory stack
         :raise InvalidInstructionArgumentValueException: Invalid instruction argument value
+        :raise GetValueFromNotInitVarException: Not initialized variable
         """
         if argument.arg_type in [ArgType.INT, ArgType.BOOL, ArgType.STRING, ArgType.NIL]:
             return DataType(argument.arg_type.value), argument.value
@@ -966,10 +970,15 @@ class Interpreter:
         self.__check_data_types([ArgType.VAR, (ArgType.VAR, ArgType.INT, ArgType.BOOL, ArgType.STRING, ArgType.NIL)],
                                 args)
 
-        data_type, _ = self.__get_value_from_arg(args[1])
+        try:
+            data_type, _ = self.__get_value_from_arg(args[1])
+            type_name = data_type.value
+        except GetValueFromNotInitVarException:
+            # Special case for uninitialized variables
+            type_name = ""
         variable = self.__memory.get_variable(args[0].value)
 
-        value = Value(DataType.STRING, data_type.value)
+        value = Value(DataType.STRING, type_name)
         variable.value = value
 
     def __label(self, args: Dict[int, Argument]) -> None:
